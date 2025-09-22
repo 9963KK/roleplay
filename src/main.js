@@ -109,11 +109,9 @@ function renderHistoryList() {
       <div class="history-avatar">${char.icon}</div>
       <div class="history-main">\
         <div class="history-title">\
-          <span class="history-name">${char.name}</span>\
+          <span class="history-name">${previewText}</span>\
           <span class="history-time">${timeLabel}</span>\
         </div>\
-        <div class="history-desc">${char.description || ''}</div>\
-        <div class="history-preview">${previewText}</div>\
       </div>\
     `;
 
