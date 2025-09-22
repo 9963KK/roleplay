@@ -139,6 +139,14 @@ function renderCharacterDropdown() {
       hideCharacterDropdown();
       const label = document.getElementById('roleSwitcherLabel');
       if (label) label.textContent = currentCharacter.name;
+      // 切换后头像做一次呼吸动画
+      const avatarEl = document.getElementById('currentCharacterAvatar');
+      if (avatarEl) {
+        avatarEl.classList.remove('pulse');
+        // 触发重绘以重启动画
+        void avatarEl.offsetWidth;
+        avatarEl.classList.add('pulse');
+      }
     };
     dropdown.appendChild(item);
   });
@@ -150,7 +158,9 @@ function toggleCharacterDropdown() {
   if (dropdown.classList.contains('hidden')) {
     renderCharacterDropdown();
     dropdown.classList.remove('hidden');
+    dropdown.classList.add('show');
   } else {
+    dropdown.classList.remove('show');
     dropdown.classList.add('hidden');
   }
 }
@@ -246,6 +256,13 @@ function addMessageToUI(message) {
   messageDiv.className = `message ${message.type}`;
 
   const avatar = message.type === 'ai' ? currentCharacter.icon : '👤';
+
+  // 连续消息合并：如果上一条是同一侧，则标记为连续
+  const last = messagesContainer.lastElementChild;
+  const isGrouped = last && last.classList.contains(message.type);
+  if (isGrouped) {
+    messageDiv.classList.add('grouped');
+  }
 
   if (message.type === 'ai') {
     messageDiv.innerHTML = `

@@ -343,13 +343,16 @@ body {
 
 .dropdown-name { font-size: 14px; }
 
-.chat-messages { flex: 1; padding: 24px 20px 24px 4px; overflow-y: auto; background: transparent; }
+.chat-messages { flex: 1; padding: 24px 20px 24px 20px; overflow-y: auto; background: transparent; }
 
 /* 消息流容器：居中、最大宽 */
 .chat-messages { display: flex; flex-direction: column; align-items: flex-start; }
 .chat-messages > .message { width: 100%; max-width: 720px; }
 
 .message { margin: 12px 0; display: flex; align-items: center; gap: 12px; }
+.message.grouped { margin-top: 4px; }
+.message.grouped .message-avatar { visibility: hidden; width: 40px; }
+.message.grouped .message-time.outside { opacity: 0.7; }
 .message .message-time.outside { font-size: 11px; color: var(--text-secondary); align-self: center; white-space: nowrap; }
 
 .message.user { flex-direction: row; justify-content: flex-end; }
@@ -402,6 +405,13 @@ body {
 .message-text { color: var(--text-primary); line-height: 1.6; }
 
 .message-time { font-size: 11px; color: var(--text-secondary); margin-top: 5px; }
+
+/* 新消息淡入与上移动画 */
+@keyframes fadeSlideIn {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.message { animation: fadeSlideIn 0.18s ease; }
 
 .chat-input { 
   background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.03) 100%); 
