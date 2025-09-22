@@ -251,7 +251,6 @@ function addMessageToUI(message) {
     messageDiv.innerHTML = `
       <div class="message-avatar">${avatar}</div>
       <div class="message-content">
-        ${message.author ? `<div class="message-author">${message.author}</div>` : ''}
         <div class="message-text">${message.text}</div>
       </div>
       <div class="message-time outside">${message.time}</div>
