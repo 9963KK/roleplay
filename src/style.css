@@ -211,28 +211,52 @@ body {
 }
 
 /* 顶部人物切换条 */
-.character-switcher {
+/* 头像下拉 */
+.character-dropdown {
   margin-left: auto;
-  display: flex;
-  gap: 8px;
+  position: relative;
 }
 
-.switcher-item {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+.character-dropdown.hidden { display: none; }
+
+#characterDropdown {
+  position: absolute;
+  right: 0;
+  top: 48px;
+  background: #1a0f08;
   border: 1px solid #cd853f;
-  background: #2c1810;
-  color: #f5deb3;
+  border-radius: 10px;
+  width: 220px;
+  max-height: 300px;
+  overflow-y: auto;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+  z-index: 10;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
   cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.dropdown-item:hover { background: #2c1810; }
+.dropdown-item.active { background: linear-gradient(135deg, #d4a574, #cd853f); color: #1a0f08; }
+
+.dropdown-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #d4a574, #cd853f);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  font-size: 16px;
 }
 
-.switcher-item:hover { transform: translateY(-1px); background: #3d2817; }
-.switcher-item.active { background: linear-gradient(135deg, #d4a574, #cd853f); color: #1a0f08; }
+.dropdown-name { font-size: 14px; }
 
 .chat-messages {
   flex: 1;

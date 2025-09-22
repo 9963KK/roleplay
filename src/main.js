@@ -122,18 +122,43 @@ function renderHistoryList() {
 }
 
 function renderCharacterSwitcher() {
-  const switcher = document.getElementById('characterSwitcher');
-  if (!switcher) return;
-  switcher.innerHTML = '';
+  // 兼容保留：不再使用顶部横向切换，改为下拉列表
+}
+
+function renderCharacterDropdown() {
+  const dropdown = document.getElementById('characterDropdown');
+  if (!dropdown) return;
+  dropdown.innerHTML = '';
 
   characters.forEach((char) => {
-    const btn = document.createElement('button');
-    btn.className = `switcher-item ${char.id === currentCharacter.id ? 'active' : ''}`;
-    btn.title = char.name;
-    btn.textContent = char.icon;
-    btn.onclick = () => selectCharacter(char.id);
-    switcher.appendChild(btn);
+    const item = document.createElement('div');
+    item.className = `dropdown-item ${char.id === currentCharacter.id ? 'active' : ''}`;
+    item.innerHTML = `
+      <div class=\"dropdown-avatar\">${char.icon}</div>
+      <div class=\"dropdown-name\">${char.name}</div>
+    `;
+    item.onclick = () => {
+      selectCharacter(char.id);
+      hideCharacterDropdown();
+    };
+    dropdown.appendChild(item);
   });
+}
+
+function toggleCharacterDropdown() {
+  const dropdown = document.getElementById('characterDropdown');
+  if (!dropdown) return;
+  if (dropdown.classList.contains('hidden')) {
+    renderCharacterDropdown();
+    dropdown.classList.remove('hidden');
+  } else {
+    dropdown.classList.add('hidden');
+  }
+}
+
+function hideCharacterDropdown() {
+  const dropdown = document.getElementById('characterDropdown');
+  dropdown?.classList.add('hidden');
 }
 
 function renderCharacterList() {
@@ -194,7 +219,7 @@ function selectCharacter(characterId) {
   currentCharacter = nextCharacter;
   renderCharacterList();
   renderHistoryList();
-  renderCharacterSwitcher();
+  renderCharacterDropdown();
   loadConversation(characterId);
 
   const avatar = document.getElementById('currentCharacterAvatar');
@@ -408,7 +433,7 @@ function bumpCurrentCharacterActivity() {
   }
   renderHistoryList();
   renderCharacterManagement();
-  renderCharacterSwitcher();
+  renderCharacterDropdown();
   updateStats();
 }
 
@@ -421,10 +446,24 @@ document.addEventListener('DOMContentLoaded', () => {
   initializeConversations();
   renderCharacterList();
   renderHistoryList();
-  renderCharacterSwitcher();
+  renderCharacterDropdown();
   renderCharacterManagement();
   loadConversation(currentCharacter.id);
   updateStats();
+
+  const avatarEl = document.getElementById('currentCharacterAvatar');
+  avatarEl?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleCharacterDropdown();
+  });
+
+  document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('characterDropdown');
+    if (!dropdown || dropdown.classList.contains('hidden')) return;
+    const avatar = document.getElementById('currentCharacterAvatar');
+    if (dropdown.contains(e.target) || avatar?.contains(e.target)) return;
+    hideCharacterDropdown();
+  });
 
   const characterForm = document.getElementById('characterForm');
   characterForm?.addEventListener('submit', (e) => {
