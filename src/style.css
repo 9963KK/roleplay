@@ -115,6 +115,7 @@ body {
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
+  overflow: hidden; /* 防止内容溢出边框 */
 }
 
 .history-item:hover {
@@ -139,11 +140,11 @@ body {
   flex-shrink: 0;
 }
 
-.history-main { flex: 1; }
-.history-title { display: flex; justify-content: space-between; margin-bottom: 4px; }
-.history-name { font-weight: bold; }
+.history-main { flex: 1; min-width: 0; }
+.history-title { display: flex; justify-content: space-between; margin-bottom: 4px; gap: 8px; min-width: 0; }
+.history-name { font-weight: bold; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .history-time { color: #cd853f; font-size: 12px; }
-.history-desc { color: #cd853f; font-size: 12px; margin-bottom: 2px; }
+.history-desc { color: #cd853f; font-size: 12px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .history-preview { color: #f5deb3; opacity: 0.85; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* 防止长文本撑破布局 */
 .history-name, .history-desc, .history-preview { overflow: hidden; text-overflow: ellipsis; }
@@ -188,6 +189,9 @@ body {
 .character-name {
   font-weight: bold;
   font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .character-desc {
@@ -208,6 +212,7 @@ body {
   display: flex;
   align-items: center;
   gap: 15px;
+  min-width: 0;
 }
 
 /* 顶部人物切换条 */
@@ -303,6 +308,7 @@ body {
   border-radius: 12px;
   padding: 15px;
   max-width: 70%;
+  word-break: break-word; /* 长词换行 */
 }
 
 .message.user .message-content {
