@@ -360,7 +360,8 @@ body {
 .message.ai .message-content { margin-top: calc((var(--avatar-size) - 1.6em) / 2 - 15px); }
 .message.user .message-content { margin-top: calc((var(--avatar-size) - 1.6em) / 2); }
 .message.grouped .message-content { margin-top: 0; }
-.message .message-time.outside { font-size: 11px; color: var(--text-secondary); align-self: center; white-space: nowrap; width: 56px; text-align: center; }
+.message .message-time.outside { font-size: 11px; color: var(--text-secondary); align-self: center; white-space: nowrap; width: 56px; text-align: center; opacity: 0; transition: opacity 0.15s ease; pointer-events: none; }
+.message:hover .message-time.outside, .message:focus-within .message-time.outside { opacity: 1; }
 
 .message.user { flex-direction: row; justify-content: flex-end; }
 .message.user .message-time.outside { order: 1; margin-right: auto; }
