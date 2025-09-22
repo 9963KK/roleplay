@@ -145,6 +145,8 @@ body {
 .history-time { color: #cd853f; font-size: 12px; }
 .history-desc { color: #cd853f; font-size: 12px; margin-bottom: 2px; }
 .history-preview { color: #f5deb3; opacity: 0.85; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 防止长文本撑破布局 */
+.history-name, .history-desc, .history-preview { overflow: hidden; text-overflow: ellipsis; }
 
 .character-item {
   background: #2c1810;

@@ -43,16 +43,44 @@ function initializeCharacters() {
 }
 
 function initializeConversations() {
-  characters.forEach((char) => {
+  characters.forEach((char, index) => {
+    const baseTs = estimateTimestampFromLastActive(char.lastActive);
+    const ts = baseTs ?? Date.now() - index * 5 * 60 * 1000;
     conversations[char.id] = [
       {
         type: 'ai',
         author: char.name,
         text: `你好！我是${char.name}，很高兴与你交流。`,
-        time: '14:25'
+        time: formatClock(ts),
+        timestamp: ts
       }
     ];
   });
+}
+
+function formatClock(timestamp) {
+  return new Date(timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatRelativeTime(timestamp) {
+  const diff = Date.now() - timestamp;
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  if (diff < minute) return '刚刚';
+  if (diff < hour) return `${Math.floor(diff / minute)}分钟前`;
+  if (diff < day) return `${Math.floor(diff / hour)}小时前`;
+  return new Date(timestamp).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
+}
+
+function estimateTimestampFromLastActive(label) {
+  if (!label) return undefined;
+  if (label.includes('刚刚')) return Date.now();
+  const m = label.match(/(\d+)分钟/);
+  if (m) return Date.now() - parseInt(m[1], 10) * 60 * 1000;
+  const h = label.match(/(\d+)小时/);
+  if (h) return Date.now() - parseInt(h[1], 10) * 60 * 60 * 1000;
+  return undefined;
 }
 
 function renderHistoryList() {
@@ -60,11 +88,18 @@ function renderHistoryList() {
   if (!listContainer) return;
   listContainer.innerHTML = '';
 
-  characters.forEach((char) => {
-    const characterConversations = conversations[char.id] || [];
-    const lastMessage = characterConversations[characterConversations.length - 1];
-    const lastTime = lastMessage ? lastMessage.time : char.lastActive || '';
-    const previewText = lastMessage ? lastMessage.text : '暂无对话';
+  const historyData = characters
+    .map((char) => {
+      const msgs = conversations[char.id] || [];
+      const lastMsg = msgs[msgs.length - 1];
+      const lastTs = lastMsg?.timestamp ?? estimateTimestampFromLastActive(char.lastActive) ?? 0;
+      return { char, lastMsg, lastTs };
+    })
+    .sort((a, b) => b.lastTs - a.lastTs);
+
+  historyData.forEach(({ char, lastMsg, lastTs }) => {
+    const timeLabel = lastTs ? formatRelativeTime(lastTs) : '';
+    const previewText = lastMsg ? lastMsg.text : '暂无对话';
 
     const item = document.createElement('div');
     item.className = `history-item ${char.id === currentCharacter.id ? 'active' : ''}`;
@@ -72,14 +107,14 @@ function renderHistoryList() {
 
     item.innerHTML = `
       <div class="history-avatar">${char.icon}</div>
-      <div class="history-main">
-        <div class="history-title">
-          <span class="history-name">${char.name}</span>
-          <span class="history-time">${lastTime}</span>
-        </div>
-        <div class="history-desc">${char.description || ''}</div>
-        <div class="history-preview">${previewText}</div>
-      </div>
+      <div class="history-main">\
+        <div class="history-title">\
+          <span class="history-name">${char.name}</span>\
+          <span class="history-time">${timeLabel}</span>\
+        </div>\
+        <div class="history-desc">${char.description || ''}</div>\
+        <div class="history-preview">${previewText}</div>\
+      </div>\
     `;
 
     listContainer.appendChild(item);
@@ -207,10 +242,12 @@ function sendMessage() {
   const text = input.value.trim();
   if (!text) return;
 
+  const nowTs = Date.now();
   const userMessage = {
     type: 'user',
     text,
-    time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+    time: formatClock(nowTs),
+    timestamp: nowTs
   };
 
   conversations[currentCharacter.id].push(userMessage);
@@ -220,11 +257,13 @@ function sendMessage() {
   bumpCurrentCharacterActivity();
 
   setTimeout(() => {
+    const aiTs = Date.now();
     const aiMessage = {
       type: 'ai',
       author: currentCharacter.name,
       text: generateAIResponse(text, currentCharacter),
-      time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+      time: formatClock(aiTs),
+      timestamp: aiTs
     };
 
     conversations[currentCharacter.id].push(aiMessage);
