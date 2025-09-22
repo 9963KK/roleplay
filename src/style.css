@@ -233,6 +233,8 @@ body {
   position: relative; /* 作为下拉定位参照 */
 }
 
+.header-actions { margin-left: auto; display: flex; gap: 10px; }
+
 /* 顶部人物切换条 */
 /* 头像下拉 */
 .character-dropdown { position: absolute; }

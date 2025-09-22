@@ -524,3 +524,13 @@ window.setTheme = (theme) => {
   document.body.setAttribute('data-theme', theme);
   localStorage.setItem('theme', theme);
 };
+
+// 新建对话：为当前人物创建一条空会话并切换到该人物
+window.newConversation = () => {
+  const cid = currentCharacter.id;
+  if (!conversations[cid]) conversations[cid] = [];
+  // 清空当前人物的消息，视为新会话
+  conversations[cid] = [];
+  loadConversation(cid);
+  renderHistoryList();
+};
