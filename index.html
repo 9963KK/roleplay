@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>酒馆对话系统</title>
+  </head>
+  <body>
+    <div class="container">
+      <!-- 对话界面 -->
+      <div id="chatInterface" class="interface active">
+        <div class="header">
+          <h1>🍺 酒馆对话系统</h1>
+          <div class="header-buttons">
+            <button class="btn btn-secondary" onclick="showSettings()">⚙ 设置</button>
+          </div>
+        </div>
+
+        <div class="chat-container">
+          <div class="sidebar">
+            <h3>历史对话</h3>
+            <div class="history-list" id="historyList">
+              <!-- 历史对话列表将通过JavaScript动态生成 -->
+            </div>
+          </div>
+
+          <div class="chat-area">
+            <div class="chat-header">
+              <div class="character-avatar" id="currentCharacterAvatar">🧙</div>
+              <div>
+                <div class="character-name" id="currentCharacterName">智慧导师</div>
+                <div style="font-size: 12px; color: #cd853f;">在线 · 最后活跃：刚刚</div>
+              </div>
+              <div class="character-switcher" id="characterSwitcher">
+                <!-- 人物切换头像将通过JavaScript动态生成 -->
+              </div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+              <!-- 对话内容将通过JavaScript动态生成 -->
+            </div>
+
+            <div class="chat-input">
+              <input type="text" class="input-field" id="messageInput" placeholder="输入消息..." onkeypress="handleKeyPress(event)" />
+              <button class="btn" onclick="sendMessage()">发送</button>
+              <button class="btn btn-secondary" onclick="attachFile()">📎</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 设置界面 -->
+      <div id="settingsInterface" class="interface">
+        <div class="header">
+          <h1>系统设置</h1>
+          <div class="header-buttons">
+            <button class="btn btn-secondary" onclick="showChat()">← 返回对话</button>
+          </div>
+        </div>
+
+        <div class="settings-container">
+          <div class="settings-sidebar">
+            <div class="settings-menu">
+              <div class="menu-item active" onclick="showSettingsTab(event, 'characters')">人物管理</div>
+              <div class="menu-item" onclick="showSettingsTab(event, 'interface')">界面设置</div>
+              <div class="menu-item" onclick="showSettingsTab(event, 'notifications')">通知设置</div>
+              <div class="menu-item" onclick="showSettingsTab(event, 'privacy')">隐私设置</div>
+            </div>
+          </div>
+
+          <div class="settings-content">
+            <div class="settings-header">
+              <h2>自定义人物管理</h2>
+              <button class="btn" onclick="showAddCharacterModal()">+ 添加人物</button>
+            </div>
+
+            <div class="character-management" id="characterManagement">
+              <!-- 人物管理卡片将通过JavaScript动态生成 -->
+            </div>
+
+            <div class="stats-panel">
+              <h3>统计信息</h3>
+              <div class="stats-grid">
+                <div class="stat-item">总人物数量：<span id="totalCharacters">3</span></div>
+                <div class="stat-item">总对话次数：<span id="totalConversations">127</span></div>
+                <div class="stat-item">平均对话时长：<span id="avgDuration">8.5分钟</span></div>
+                <div class="stat-item">今日对话次数：<span id="todayConversations">12</span></div>
+                <div class="stat-item">最活跃人物：<span id="mostActive">智慧导师</span></div>
+                <div class="stat-item">系统运行时间：<span id="uptime">30天</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 添加/编辑人物模态框 -->
+    <div id="characterModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modalTitle">添加新人物</h3>
+          <button class="close-btn" onclick="closeCharacterModal()">&times;</button>
+        </div>
+
+        <form id="characterForm">
+          <div class="form-group">
+            <label for="characterName">人物名称</label>
+            <input type="text" id="characterName" required />
+          </div>
+
+          <div class="form-group">
+            <label for="characterIcon">人物图标</label>
+            <input type="text" id="characterIcon" placeholder="例如：🧙, 🎨, 💼" required />
+          </div>
+
+          <div class="form-group">
+            <label for="characterDesc">人物描述</label>
+            <textarea id="characterDesc" placeholder="描述这个人物的特点和功能" required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="characterPersonality">性格特点</label>
+            <textarea id="characterPersonality" placeholder="描述这个人物的性格特征" required></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeCharacterModal()">取消</button>
+            <button type="submit" class="btn">保存</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
