@@ -359,7 +359,7 @@ body {
 .message .message-time.outside { font-size: 11px; color: var(--text-secondary); align-self: center; white-space: nowrap; }
 
 .message.user { flex-direction: row; justify-content: flex-end; }
-.message.user .message-time.outside { order: 1; }
+.message.user .message-time.outside { order: 1; margin-right: auto; }
 .message.user .message-content { order: 2; }
 .message.user .message-avatar { order: 3; }
 
