@@ -2,33 +2,33 @@
 .input-top .input-left { flex: 1; }
 /* 主题变量 */
 :root {
-  --bg-gradient-start: #f7f5f2;
-  --bg-gradient-end: #e8e6e3;
+  --bg-gradient-start: #f6f7fb; /* 替换琥珀为冷色背景 */
+  --bg-gradient-end: #eef1f6;
   --panel-bg: #ffffff;
-  --panel-border: #d8d5ce;
-  --text-primary: #2b2b2b;
-  --text-secondary: #6b6b6b;
-  --accent-1: #c28b37;
-  --accent-2: #d9ad6a;
+  --panel-border: #e5e7eb;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --accent-1: #10a37f; /* 绿色主色 */
+  --accent-2: #34d399; /* 渐变第二色 */
   --chip-bg: linear-gradient(135deg, var(--accent-2), var(--accent-1));
   --chat-ai-bg: #ffffff;
-  --chat-user-bg: #fff3da;
+  --chat-user-bg: #eaf8f3; /* 极浅绿色替代琥珀 */
   /* UI 尺寸变量 */
   --avatar-size: 40px;
 }
 
 [data-theme="dark"] {
-  --bg-gradient-start: #3d2817;
-  --bg-gradient-end: #1a0f08;
-  --panel-bg: #2c1810;
-  --panel-border: #cd853f;
-  --text-primary: #f5deb3;
-  --text-secondary: #cd853f;
-  --accent-1: #cd853f;
-  --accent-2: #d4a574;
+  --bg-gradient-start: #0b1221;
+  --bg-gradient-end: #0f172a;
+  --panel-bg: #0f172a;
+  --panel-border: #334155;
+  --text-primary: #e5e7eb;
+  --text-secondary: #94a3b8;
+  --accent-1: #10a37f;
+  --accent-2: #34d399;
   --chip-bg: linear-gradient(135deg, var(--accent-2), var(--accent-1));
-  --chat-ai-bg: #2c1810;
-  --chat-user-bg: #8b4513;
+  --chat-ai-bg: #111827;
+  --chat-user-bg: #0b3b2d;
 }
 
 * {
@@ -379,7 +379,7 @@ body {
   flex-shrink: 0;
 }
 
-.message.ai .message-avatar { background: var(--chip-bg); color: #1a0f08; }
+.message.ai .message-avatar { background: var(--chip-bg); color: #052e2b; }
 .message.ai .message-time.outside { margin-left: auto; text-align: right; }
 
 /* 切换身份时头像轻微呼吸动画 */
@@ -390,7 +390,7 @@ body {
 }
 .character-avatar.pulse { animation: pulseScale 0.22s ease; }
 
-.message.user .message-avatar { background: #8b4513; color: #fff; }
+.message.user .message-avatar { background: #065f46; color: #e5fff5; }
 
 .message-content {
   background: var(--chat-ai-bg);
@@ -562,17 +562,9 @@ body {
   border-radius: 15px;
 }
 
-.btn-edit {
-  background: #8b4513;
-  border: 1px solid #cd853f;
-  color: #f5deb3;
-}
+.btn-edit { background: #065f46; border: 1px solid #10a37f; color: #e5fff5; }
 
-.btn-delete {
-  background: #654321;
-  border: 1px solid #8b4513;
-  color: #f5deb3;
-}
+.btn-delete { background: #0b3b2d; border: 1px solid #065f46; color: #e5fff5; }
 
 .stats-panel {
   background: var(--panel-bg);
@@ -582,10 +574,7 @@ body {
   margin-top: 20px;
 }
 
-.stats-panel h3 {
-  color: #d4a574;
-  margin-bottom: 15px;
-}
+.stats-panel h3 { color: var(--accent-2); margin-bottom: 15px; }
 
 .stats-grid {
   display: grid;
@@ -593,9 +582,7 @@ body {
   gap: 15px;
 }
 
-.stat-item {
-  color: #cd853f;
-}
+.stat-item { color: var(--accent-1); }
 
 /* 模态框样式 */
 .modal {
@@ -609,18 +596,7 @@ body {
   z-index: 1000;
 }
 
-.modal-content {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: #2c1810;
-  border: 2px solid #cd853f;
-  border-radius: 25px;
-  padding: 30px;
-  width: 500px;
-  max-width: 90%;
-}
+.modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #0f172a; border: 2px solid #10a37f; border-radius: 25px; padding: 30px; width: 500px; max-width: 90%; }
 
 .modal-header {
   display: flex;
@@ -629,37 +605,18 @@ body {
   margin-bottom: 20px;
 }
 
-.modal-header h3 {
-  color: #d4a574;
-}
+.modal-header h3 { color: var(--accent-2); }
 
-.close-btn {
-  background: none;
-  border: none;
-  color: #cd853f;
-  font-size: 24px;
-  cursor: pointer;
-}
+.close-btn { background: none; border: none; color: var(--accent-1); font-size: 24px; cursor: pointer; }
 
 .form-group {
   margin-bottom: 20px;
 }
 
-.form-group label {
-  display: block;
-  color: #d4a574;
-  margin-bottom: 8px;
-}
+.form-group label { display: block; color: var(--accent-2); margin-bottom: 8px; }
 
 .form-group input,
-.form-group textarea {
-  width: 100%;
-  background: #1a0f08;
-  border: 1px solid #cd853f;
-  border-radius: 8px;
-  padding: 12px;
-  color: #f5deb3;
-}
+.form-group textarea { width: 100%; background: #0b1221; border: 1px solid #334155; border-radius: 8px; padding: 12px; color: #e5e7eb; }
 
 .form-group textarea {
   height: 80px;
