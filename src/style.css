@@ -383,7 +383,23 @@ body {
 .message-time { font-size: 11px; color: var(--text-secondary); margin-top: 5px; }
 
 .chat-input { background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.03) 100%); border-top: 1px solid var(--panel-border); padding: 16px 20px; position: sticky; bottom: 0; }
-.input-row { display: flex; gap: 12px; align-items: center; }
+.input-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: var(--panel-bg);
+  border: 1.5px solid var(--panel-border);
+  border-radius: 28px;
+  padding: 12px 12px 12px 18px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.08);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  width: min(960px, 100%);
+  margin: 0 auto;
+}
+.input-row:focus-within {
+  border-color: var(--accent-2);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.12), 0 0 0 3px rgba(212,165,106,0.15);
+}
 
 .input-field {
   flex: 1;
@@ -394,13 +410,15 @@ body {
   color: var(--text-primary);
   font-size: 14px;
 }
+.input-row .input-field { background: transparent; border: none; padding: 6px 8px; border-radius: 0; }
+.chat-input .btn { height: 42px; border-radius: 20px; padding: 0 16px; }
 
 .input-field::placeholder { color: var(--text-secondary); }
 
 .input-field:focus { outline: none; border-color: var(--accent-2); }
 
-.skillbar { margin-top: 10px; display: flex; gap: 10px; }
-.skill-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--panel-border); background: var(--panel-bg); cursor: pointer; }
+.skillbar { margin-top: 10px; display: flex; gap: 10px; width: min(960px, 100%); margin-left: auto; margin-right: auto; }
+.skill-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--panel-border); background: var(--panel-bg); cursor: pointer; box-shadow: 0 6px 14px rgba(0,0,0,0.06); }
 .skill-btn:hover { background: rgba(0,0,0,0.03); }
 
 /* 设置界面样式 */
