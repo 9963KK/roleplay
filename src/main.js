@@ -439,6 +439,10 @@ function attachFile() {
   alert('附件功能开发中...');
 }
 
+function startVoiceCall() {
+  alert('语音通话功能开发中...');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initializeCharacters();
   initializeConversations();
@@ -538,6 +542,7 @@ window.closeCharacterModal = closeCharacterModal;
 window.sendMessage = sendMessage;
 window.handleKeyPress = handleKeyPress;
 window.attachFile = attachFile;
+window.startVoiceCall = startVoiceCall;
 window.setTheme = (theme) => {
   document.body.setAttribute('data-theme', theme);
   localStorage.setItem('theme', theme);

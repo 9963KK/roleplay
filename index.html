@@ -46,9 +46,14 @@
             </div>
 
             <div class="chat-input">
-              <input type="text" class="input-field" id="messageInput" placeholder="输入消息..." onkeypress="handleKeyPress(event)" />
-              <button class="btn" onclick="sendMessage()">发送</button>
-              <button class="btn btn-secondary" onclick="attachFile()">📎</button>
+              <div class="input-row">
+                <input type="text" class="input-field" id="messageInput" placeholder="输入消息..." onkeypress="handleKeyPress(event)" />
+                <button class="btn" onclick="sendMessage()">发送</button>
+              </div>
+              <div class="skillbar">
+                <button class="skill-btn" title="添加附件" onclick="attachFile()">📎</button>
+                <button class="skill-btn" title="语音通话" onclick="startVoiceCall()">🎙️</button>
+              </div>
             </div>
           </div>
         </div>
