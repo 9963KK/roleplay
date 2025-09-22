@@ -45,18 +45,19 @@
             <div class="chat-input">
               <div class="input-container">
                 <div class="input-left">
-                  <span class="input-icon">💬</span>
                   <input type="text" class="input-field" id="messageInput" placeholder="询问任何问题" onkeypress="handleKeyPress(event)" />
                 </div>
-                <div class="toolbar-left">
-                  <button class="action-btn" title="添加附件" onclick="attachFile()">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-                  </button>
-                  <button class="action-btn" title="语音通话" onclick="startVoiceCall()">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.86 19.86 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.86 19.86 0 0 1 2.08 4.18 2 2 0 0 1 4.06 2h3a2 2 0 0 1 2 1.72c.12.9.37 1.77.72 2.58a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.5-1.2a2 2 0 0 1 2.11-.45c.81.35 1.68.6 2.58.72A2 2 0 0 1 22 16.92z"/></svg>
-                  </button>
+                <div class="input-toolbar">
+                  <div class="tool-left">
+                    <button class="action-btn" title="添加附件" onclick="attachFile()">
+                      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                    </button>
+                    <button class="action-btn" title="语音通话" onclick="startVoiceCall()">
+                      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.86 19.86 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.86 19.86 0 0 1 2.08 4.18 2 2 0 0 1 4.06 2h3a2 2 0 0 1 2 1.72c.12.9.37 1.77.72 2.58a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.5-1.2a2 2 0 0 1 2.11-.45c.81.35 1.68.6 2.58.72A2 2 0 0 1 22 16.92z"/></svg>
+                    </button>
+                  </div>
+                  <button class="send-btn" onclick="sendMessage()">➤</button>
                 </div>
-                <button class="send-btn" onclick="sendMessage()">➤</button>
               </div>
             </div>
           </div>
