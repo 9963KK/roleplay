@@ -9,6 +9,8 @@
   --accent-1: #c28b37;
   --accent-2: #d9ad6a;
   --chip-bg: linear-gradient(135deg, var(--accent-2), var(--accent-1));
+  --chat-ai-bg: #ffffff;
+  --chat-user-bg: #fff3da;
 }
 
 [data-theme="dark"] {
@@ -21,6 +23,8 @@
   --accent-1: #cd853f;
   --accent-2: #d4a574;
   --chip-bg: linear-gradient(135deg, var(--accent-2), var(--accent-1));
+  --chat-ai-bg: #2c1810;
+  --chat-user-bg: #8b4513;
 }
 
 * {
@@ -305,15 +309,12 @@ body {
   flex-shrink: 0;
 }
 
-.message.ai .message-avatar {
-  background: var(--chip-bg);
-  color: #1a0f08;
-}
+.message.ai .message-avatar { background: var(--chip-bg); color: #1a0f08; }
 
 .message.user .message-avatar { background: #8b4513; color: #fff; }
 
 .message-content {
-  background: #2c1810;
+  background: var(--chat-ai-bg);
   border: 1px solid var(--panel-border);
   border-radius: 12px;
   padding: 15px;
@@ -321,7 +322,7 @@ body {
   word-break: break-word; /* 长词换行 */
 }
 
-.message.user .message-content { background: #8b4513; border-color: var(--panel-border); }
+.message.user .message-content { background: var(--chat-user-bg); border-color: var(--panel-border); }
 
 .message-author {
   font-weight: bold;
@@ -329,10 +330,7 @@ body {
   margin-bottom: 5px;
 }
 
-.message-text {
-  color: var(--text-primary);
-  line-height: 1.4;
-}
+.message-text { color: var(--text-primary); line-height: 1.6; }
 
 .message-time { font-size: 11px; color: var(--text-secondary); margin-top: 5px; }
 
