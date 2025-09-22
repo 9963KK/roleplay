@@ -70,6 +70,40 @@ body {
   align-items: center;
 }
 
+.role-switcher { display: flex; align-items: center; gap: 8px; }
+.btn-model {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-model:hover { background: rgba(0,0,0,0.03); }
+.btn-model .caret { opacity: 0.7; }
+
+.model-dropdown {
+  position: absolute;
+  top: 64px;
+  left: 20px;
+  width: 280px;
+  max-height: 60vh;
+  overflow: auto;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+  z-index: 20;
+}
+.model-dropdown.hidden { display: none; }
+.model-item { display: flex; align-items: center; gap: 10px; padding: 12px 14px; cursor: pointer; }
+.model-item:hover { background: rgba(0,0,0,0.04); }
+.model-item.active { background: var(--chip-bg); color: #1a0f08; }
+.model-item .avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--chip-bg); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+
 .header h1 {
   color: var(--text-primary);
   font-size: 24px;

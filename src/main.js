@@ -123,27 +123,29 @@ function renderCharacterSwitcher() {
 }
 
 function renderCharacterDropdown() {
-  const dropdown = document.getElementById('characterDropdown');
+  const dropdown = document.getElementById('roleDropdown');
   if (!dropdown) return;
   dropdown.innerHTML = '';
 
   characters.forEach((char) => {
     const item = document.createElement('div');
-    item.className = `dropdown-item ${char.id === currentCharacter.id ? 'active' : ''}`;
+    item.className = `model-item ${char.id === currentCharacter.id ? 'active' : ''}`;
     item.innerHTML = `
-      <div class=\"dropdown-avatar\">${char.icon}</div>
-      <div class=\"dropdown-name\">${char.name}</div>
+      <div class=\"avatar\">${char.icon}</div>
+      <div class=\"name\">${char.name}</div>
     `;
     item.onclick = () => {
       selectCharacter(char.id);
       hideCharacterDropdown();
+      const label = document.getElementById('roleSwitcherLabel');
+      if (label) label.textContent = currentCharacter.name;
     };
     dropdown.appendChild(item);
   });
 }
 
 function toggleCharacterDropdown() {
-  const dropdown = document.getElementById('characterDropdown');
+  const dropdown = document.getElementById('roleDropdown');
   if (!dropdown) return;
   if (dropdown.classList.contains('hidden')) {
     renderCharacterDropdown();
@@ -154,7 +156,7 @@ function toggleCharacterDropdown() {
 }
 
 function hideCharacterDropdown() {
-  const dropdown = document.getElementById('characterDropdown');
+  const dropdown = document.getElementById('roleDropdown');
   dropdown?.classList.add('hidden');
 }
 
@@ -455,7 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
   avatarEl?.addEventListener('click', (e) => {
     e.stopPropagation();
     // 将下拉定位到头像左上相对位置
-    const dropdown = document.getElementById('characterDropdown');
+    const dropdown = document.getElementById('roleDropdown');
     if (dropdown) {
       const rect = avatarEl.getBoundingClientRect();
       const headerRect = document.querySelector('.chat-header').getBoundingClientRect();
@@ -465,11 +467,27 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleCharacterDropdown();
   });
 
+  // 顶部角色切换按钮
+  const roleBtn = document.getElementById('roleSwitcherBtn');
+  roleBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const dropdown = document.getElementById('roleDropdown');
+    if (dropdown) {
+      // 定位到按钮左侧
+      const rect = roleBtn.getBoundingClientRect();
+      const headerRect = document.querySelector('.header').getBoundingClientRect();
+      dropdown.style.left = `${rect.left - headerRect.left}px`;
+      dropdown.style.top = `${rect.bottom - headerRect.top + 8}px`;
+    }
+    toggleCharacterDropdown();
+  });
+
   document.addEventListener('click', (e) => {
-    const dropdown = document.getElementById('characterDropdown');
+    const dropdown = document.getElementById('roleDropdown');
     if (!dropdown || dropdown.classList.contains('hidden')) return;
     const avatar = document.getElementById('currentCharacterAvatar');
-    if (dropdown.contains(e.target) || avatar?.contains(e.target)) return;
+    const roleBtnLocal = document.getElementById('roleSwitcherBtn');
+    if (dropdown.contains(e.target) || avatar?.contains(e.target) || roleBtnLocal?.contains(e.target)) return;
     hideCharacterDropdown();
   });
 
