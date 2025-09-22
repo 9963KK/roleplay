@@ -342,8 +342,12 @@ body {
 .chat-messages > .message { width: 100%; max-width: 720px; }
 
 .message { margin: 12px 0; display: flex; align-items: flex-start; gap: 12px; }
+.message .message-time.outside { font-size: 11px; color: var(--text-secondary); align-self: center; white-space: nowrap; }
 
 .message.user { flex-direction: row; justify-content: flex-end; }
+.message.user .message-time.outside { order: 1; }
+.message.user .message-content { order: 2; }
+.message.user .message-avatar { order: 3; }
 
 .message-avatar {
   width: 40px;
@@ -357,6 +361,7 @@ body {
 }
 
 .message.ai .message-avatar { background: var(--chip-bg); color: #1a0f08; }
+.message.ai .message-time.outside { margin-left: auto; }
 
 .message.user .message-avatar { background: #8b4513; color: #fff; }
 

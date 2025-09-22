@@ -247,14 +247,25 @@ function addMessageToUI(message) {
 
   const avatar = message.type === 'ai' ? currentCharacter.icon : '👤';
 
-  messageDiv.innerHTML = `
-    <div class="message-avatar">${avatar}</div>
-    <div class="message-content">
-      ${message.type === 'ai' ? `<div class="message-author">${message.author}</div>` : ''}
-      <div class="message-text">${message.text}</div>
-      <div class="message-time">${message.time}</div>
-    </div>
-  `;
+  if (message.type === 'ai') {
+    messageDiv.innerHTML = `
+      <div class="message-avatar">${avatar}</div>
+      <div class="message-content">
+        ${message.author ? `<div class="message-author">${message.author}</div>` : ''}
+        <div class="message-text">${message.text}</div>
+      </div>
+      <div class="message-time outside">${message.time}</div>
+    `;
+  } else {
+    // 用户消息：时间在左侧，气泡在右侧
+    messageDiv.innerHTML = `
+      <div class="message-time outside">${message.time}</div>
+      <div class="message-content">
+        <div class="message-text">${message.text}</div>
+      </div>
+      <div class="message-avatar">${avatar}</div>
+    `;
+  }
 
   messagesContainer.appendChild(messageDiv);
 }
