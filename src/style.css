@@ -147,6 +147,20 @@ body {
   color: var(--text-primary);
 }
 
+/* 顶部仅图标按钮样式 */
+.icon-btn { 
+  background: transparent; 
+  border: none; 
+  width: 44px; 
+  height: 44px; 
+  border-radius: 12px; 
+  display: inline-flex; 
+  align-items: center; 
+  justify-content: center; 
+  cursor: pointer; 
+}
+.icon-btn:hover { background: rgba(0,0,0,0.05); }
+
 /* 对话界面样式 */
 .chat-container {
   display: grid;
