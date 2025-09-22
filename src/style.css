@@ -116,6 +116,21 @@ body {
   padding: 20px;
 }
 
+.btn-new-chat {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px dashed var(--panel-border);
+  background: var(--panel-bg);
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+}
+
+.btn-new-chat:hover { background: rgba(0,0,0,0.03); transform: translateY(-1px); }
+
 .sidebar h3 {
   color: var(--text-primary);
   margin-bottom: 20px;

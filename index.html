@@ -18,6 +18,7 @@
 
         <div class="chat-container">
           <div class="sidebar">
+            <button class="btn-new-chat" onclick="newConversation()">＋ 新建对话</button>
             <h3>历史对话</h3>
             <div class="history-list" id="historyList">
               <!-- 历史对话列表将通过JavaScript动态生成 -->
@@ -30,9 +31,6 @@
               <div>
                 <div class="character-name" id="currentCharacterName">智慧导师</div>
                 <div style="font-size: 12px; color: #cd853f;">在线 · 最后活跃：刚刚</div>
-              </div>
-              <div class="header-actions">
-                <button class="btn-secondary" onclick="newConversation()">+ 新建对话</button>
               </div>
               <div class="character-dropdown hidden" id="characterDropdown"></div>
             </div>
