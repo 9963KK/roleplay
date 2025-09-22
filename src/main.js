@@ -102,7 +102,7 @@ function renderHistoryList() {
     const previewText = lastMsg ? lastMsg.text : '暂无对话';
 
     const item = document.createElement('div');
-    item.className = `history-item ${char.id === currentCharacter.id ? 'active' : ''}`;
+    item.className = 'history-item';
     item.onclick = () => selectCharacter(char.id);
 
     item.innerHTML = `
@@ -215,7 +215,6 @@ function selectCharacter(characterId) {
   if (!nextCharacter) return;
   currentCharacter = nextCharacter;
   renderCharacterList();
-  renderHistoryList();
   renderCharacterDropdown();
   loadConversation(characterId);
 
@@ -503,6 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     renderCharacterList();
+    renderHistoryList();
     renderCharacterManagement();
     updateStats();
     closeCharacterModal();
