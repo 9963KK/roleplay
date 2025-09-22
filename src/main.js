@@ -58,6 +58,55 @@ function initializeConversations() {
   });
 }
 
+// 像素风头像（RPG风格）
+function pixelWizardSVG() {
+  return `
+  <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    <rect x="6" y="1" width="4" height="2" fill="#5d4037"/>
+    <rect x="5" y="3" width="6" height="2" fill="#5d4037"/>
+    <rect x="4" y="5" width="8" height="1" fill="#5d4037"/>
+    <rect x="3" y="6" width="10" height="1" fill="#5d4037"/>
+    <rect x="6" y="7" width="4" height="3" fill="#f3c26b"/>
+    <rect x="5" y="10" width="6" height="4" fill="#6a1b9a"/>
+    <rect x="11" y="9" width="1" height="5" fill="#2e7d32"/>
+    <rect x="12" y="9" width="1" height="1" fill="#a5d6a7"/>
+  </svg>`;
+}
+function pixelArtistSVG() {
+  return `
+  <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    <rect x="6" y="6" width="4" height="3" fill="#f3c26b"/>
+    <rect x="5" y="9" width="6" height="5" fill="#8e44ad"/>
+    <rect x="9" y="4" width="3" height="2" fill="#7f8c8d"/>
+    <rect x="3" y="10" width="3" height="2" fill="#c49b6e"/>
+    <rect x="3" y="10" width="1" height="1" fill="#e74c3c"/>
+    <rect x="4" y="11" width="1" height="1" fill="#3498db"/>
+    <rect x="5" y="10" width="1" height="1" fill="#f1c40f"/>
+  </svg>`;
+}
+function pixelAdvisorSVG() {
+  return `
+  <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    <rect x="6" y="6" width="4" height="3" fill="#f3c26b"/>
+    <rect x="5" y="9" width="6" height="5" fill="#34495e"/>
+    <rect x="7" y="11" width="2" height="2" fill="#ecf0f1"/>
+    <rect x="6" y="4" width="4" height="2" fill="#7f8c8d"/>
+  </svg>`;
+}
+function pixelUserSVG() {
+  return `
+  <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    <rect x="6" y="6" width="4" height="3" fill="#f3c26b"/>
+    <rect x="5" y="9" width="6" height="5" fill="#6d4c41"/>
+  </svg>`;
+}
+function getPixelAvatarByName(name) {
+  if (name === '智慧导师') return pixelWizardSVG();
+  if (name === '创意助手') return pixelArtistSVG();
+  if (name === '商业顾问') return pixelAdvisorSVG();
+  return pixelUserSVG();
+}
+
 function formatClock(timestamp) {
   return new Date(timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 }
@@ -131,7 +180,7 @@ function renderCharacterDropdown() {
     const item = document.createElement('div');
     item.className = `model-item ${char.id === currentCharacter.id ? 'active' : ''}`;
     item.innerHTML = `
-      <div class=\"avatar\">${char.icon}</div>
+      <div class=\"avatar\">${getPixelAvatarByName(char.name)}</div>
       <div class=\"name\">${char.name}</div>
     `;
     item.onclick = () => {
@@ -182,7 +231,7 @@ function renderCharacterList() {
 
     item.innerHTML = `
       <div class="character-header">
-        <div class="character-avatar">${char.icon}</div>
+        <div class="character-avatar">${getPixelAvatarByName(char.name)}</div>
         <div class="character-name">${char.name}</div>
       </div>
       <div class="character-desc">${char.description}</div>
@@ -232,7 +281,7 @@ function selectCharacter(characterId) {
 
   const avatar = document.getElementById('currentCharacterAvatar');
   const name = document.getElementById('currentCharacterName');
-  if (avatar) avatar.textContent = currentCharacter.icon;
+  if (avatar) avatar.innerHTML = getPixelAvatarByName(currentCharacter.name);
   if (name) name.textContent = currentCharacter.name;
 }
 
@@ -255,7 +304,7 @@ function addMessageToUI(message) {
   const messageDiv = document.createElement('div');
   messageDiv.className = `message ${message.type}`;
 
-  const avatar = message.type === 'ai' ? currentCharacter.icon : '👤';
+  const avatarHTML = message.type === 'ai' ? getPixelAvatarByName(currentCharacter.name) : pixelUserSVG();
 
   // 连续消息合并：如果上一条是同一侧，则标记为连续
   const last = messagesContainer.lastElementChild;
@@ -266,7 +315,7 @@ function addMessageToUI(message) {
 
   if (message.type === 'ai') {
     messageDiv.innerHTML = `
-      <div class="message-avatar">${avatar}</div>
+      <div class="message-avatar">${avatarHTML}</div>
       <div class="message-content">
         <div class="message-text">${message.text}</div>
       </div>
@@ -279,7 +328,7 @@ function addMessageToUI(message) {
       <div class="message-content">
         <div class="message-text">${message.text}</div>
       </div>
-      <div class="message-avatar">${avatar}</div>
+      <div class="message-avatar">${avatarHTML}</div>
     `;
   }
 
