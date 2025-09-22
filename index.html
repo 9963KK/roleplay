@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>酒馆对话系统</title>
   </head>
-  <body>
+  <body data-theme="dark">
     <div class="container">
       <!-- 对话界面 -->
       <div id="chatInterface" class="interface active">
@@ -70,6 +70,12 @@
             <div class="settings-header">
               <h2>自定义人物管理</h2>
               <button class="btn" onclick="showAddCharacterModal()">+ 添加人物</button>
+            </div>
+
+            <div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center;">
+              <div>主题：</div>
+              <button class="btn-secondary" onclick="setTheme('light')">浅色</button>
+              <button class="btn-secondary" onclick="setTheme('dark')">深色</button>
             </div>
 
             <div class="character-management" id="characterManagement">

@@ -448,6 +448,10 @@ document.addEventListener('DOMContentLoaded', () => {
   loadConversation(currentCharacter.id);
   updateStats();
 
+  // 主题初始化与切换
+  const savedTheme = localStorage.getItem('theme') || 'dark';
+  document.body.setAttribute('data-theme', savedTheme);
+
   const avatarEl = document.getElementById('currentCharacterAvatar');
   avatarEl?.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -508,3 +512,7 @@ window.closeCharacterModal = closeCharacterModal;
 window.sendMessage = sendMessage;
 window.handleKeyPress = handleKeyPress;
 window.attachFile = attachFile;
+window.setTheme = (theme) => {
+  document.body.setAttribute('data-theme', theme);
+  localStorage.setItem('theme', theme);
+};
