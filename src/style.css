@@ -347,7 +347,7 @@ body {
 
 /* 消息流容器：居中、最大宽 */
 .chat-messages { display: flex; flex-direction: column; align-items: flex-start; }
-.chat-messages > .message { width: 100%; max-width: 720px; }
+.chat-messages > .message { width: 100%; max-width: 820px; }
 
 .message { margin: 12px 0; display: flex; align-items: flex-start; gap: 12px; }
 .message.grouped { margin-top: 4px; }
@@ -356,7 +356,7 @@ body {
 /* 使首行与头像中心对齐：头像40px，行高1.6em */
 .message .message-content { margin-top: calc((40px - 1.6em) / 2); }
 .message.grouped .message-content { margin-top: 0; }
-.message .message-time.outside { font-size: 11px; color: var(--text-secondary); align-self: center; white-space: nowrap; }
+.message .message-time.outside { font-size: 11px; color: var(--text-secondary); align-self: center; white-space: nowrap; width: 56px; text-align: center; }
 
 .message.user { flex-direction: row; justify-content: flex-end; }
 .message.user .message-time.outside { order: 1; margin-right: auto; }
@@ -375,7 +375,7 @@ body {
 }
 
 .message.ai .message-avatar { background: var(--chip-bg); color: #1a0f08; }
-.message.ai .message-time.outside { margin-left: auto; }
+.message.ai .message-time.outside { margin-left: auto; text-align: right; }
 
 /* 切换身份时头像轻微呼吸动画 */
 @keyframes pulseScale {
@@ -670,17 +670,11 @@ body {
 /* 响应式设计 */
 @media (max-width: 768px) {
   .chat-container,
-  .settings-container {
-    flex-direction: column;
-    height: auto;
-  }
-
+  .settings-container { flex-direction: column; height: auto; }
   .sidebar,
-  .settings-sidebar {
-    width: 100%;
-  }
-
-  .message-content {
-    max-width: 90%;
-  }
+  .settings-sidebar { width: 100%; }
+  .message-avatar { width: 32px; height: 32px; font-size: 16px; }
+  .message .message-content { margin-top: calc((32px - 1.6em) / 2); }
+  .message .message-time.outside { width: 44px; font-size: 10px; }
+  .chat-messages > .message { max-width: 100%; }
 }
