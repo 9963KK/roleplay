@@ -286,6 +286,10 @@ body {
 
 .header-actions { margin-left: auto; display: flex; gap: 10px; }
 
+.name-switcher { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.name-switcher .character-name { margin: 0; }
+.name-switcher .caret { opacity: 0.7; }
+
 /* 顶部人物切换条 */
 /* 头像下拉 */
 .character-dropdown { position: absolute; }
