@@ -230,20 +230,18 @@ body {
   align-items: center;
   gap: 15px;
   min-width: 0;
+  position: relative; /* 作为下拉定位参照 */
 }
 
 /* 顶部人物切换条 */
 /* 头像下拉 */
-.character-dropdown {
-  margin-left: auto;
-  position: relative;
-}
+.character-dropdown { position: absolute; }
 
 .character-dropdown.hidden { display: none; }
 
 #characterDropdown {
   position: absolute;
-  right: 0;
+  left: 0;
   top: 48px;
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);

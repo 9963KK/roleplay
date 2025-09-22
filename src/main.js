@@ -455,6 +455,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const avatarEl = document.getElementById('currentCharacterAvatar');
   avatarEl?.addEventListener('click', (e) => {
     e.stopPropagation();
+    // 将下拉定位到头像左上相对位置
+    const dropdown = document.getElementById('characterDropdown');
+    if (dropdown) {
+      const rect = avatarEl.getBoundingClientRect();
+      const headerRect = document.querySelector('.chat-header').getBoundingClientRect();
+      dropdown.style.left = `${rect.left - headerRect.left}px`;
+      dropdown.style.top = `${rect.bottom - headerRect.top + 8}px`;
+    }
     toggleCharacterDropdown();
   });
 
