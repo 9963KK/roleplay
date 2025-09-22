@@ -106,13 +106,12 @@ function renderHistoryList() {
     item.onclick = () => selectCharacter(char.id);
 
     item.innerHTML = `
-      <div class="history-avatar">${char.icon}</div>
-      <div class="history-main">\
-        <div class="history-title">\
-          <span class="history-name">${previewText}</span>\
-          <span class="history-time">${timeLabel}</span>\
-        </div>\
-      </div>\
+      <div class="history-main">
+        <div class="history-title">
+          <span class="history-name">${previewText}</span>
+          <span class="history-time">${timeLabel}</span>
+        </div>
+      </div>
     `;
 
     listContainer.appendChild(item);
