@@ -13,6 +13,8 @@
   --chip-bg: linear-gradient(135deg, var(--accent-2), var(--accent-1));
   --chat-ai-bg: #ffffff;
   --chat-user-bg: #fff3da;
+  /* UI 尺寸变量 */
+  --avatar-size: 40px;
 }
 
 [data-theme="dark"] {
@@ -351,10 +353,12 @@ body {
 
 .message { margin: 12px 0; display: flex; align-items: flex-start; gap: 12px; }
 .message.grouped { margin-top: 4px; }
-.message.grouped .message-avatar { visibility: hidden; width: 40px; }
+.message.grouped .message-avatar { visibility: hidden; width: var(--avatar-size); }
 .message.grouped .message-time.outside { opacity: 0.7; }
-/* 使首行与头像中心对齐：头像40px，行高1.6em */
-.message .message-content { margin-top: calc((40px - 1.6em) / 2); }
+/* 首行与头像中心对齐（分别处理AI与用户，考虑到AI气泡的上内边距） */
+.message .message-content { margin-top: 0; }
+.message.ai .message-content { margin-top: calc((var(--avatar-size) - 1.6em) / 2 - 15px); }
+.message.user .message-content { margin-top: calc((var(--avatar-size) - 1.6em) / 2); }
 .message.grouped .message-content { margin-top: 0; }
 .message .message-time.outside { font-size: 11px; color: var(--text-secondary); align-self: center; white-space: nowrap; width: 56px; text-align: center; }
 
@@ -364,8 +368,8 @@ body {
 .message.user .message-avatar { order: 3; }
 
 .message-avatar {
-  width: 40px;
-  height: 40px;
+  width: var(--avatar-size);
+  height: var(--avatar-size);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -673,8 +677,8 @@ body {
   .settings-container { flex-direction: column; height: auto; }
   .sidebar,
   .settings-sidebar { width: 100%; }
-  .message-avatar { width: 32px; height: 32px; font-size: 16px; }
-  .message .message-content { margin-top: calc((32px - 1.6em) / 2); }
+  :root { --avatar-size: 32px; }
+  .message-avatar { font-size: 16px; }
   .message .message-time.outside { width: 44px; font-size: 10px; }
   .chat-messages > .message { max-width: 100%; }
 }
