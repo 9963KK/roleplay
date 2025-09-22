@@ -384,7 +384,7 @@ body {
 
 .chat-input { 
   background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.03) 100%); 
-  border-top: 1px solid var(--panel-border); 
+  border-top: 0; 
   padding: 16px 20px; 
   position: sticky; 
   bottom: 0; 
@@ -444,6 +444,7 @@ body {
   transition: background 0.2s ease;
 }
 .action-btn:hover { background: rgba(0, 0, 0, 0.1); }
+.action-btn svg { width: 18px; height: 18px; }
 
 .send-btn {
   width: 32px;
