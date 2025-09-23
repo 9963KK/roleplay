@@ -98,6 +98,14 @@ function render() {
   const devEnabled = document.getElementById('devEnabled');
   const devBase = document.getElementById('devBase');
   const devKey = document.getElementById('devKey');
+  // 端点自定义
+  const epAsr = document.createElement('input');
+  const epTts = document.createElement('input');
+  const epVrm = document.createElement('input');
+  epAsr.placeholder = 'ASR 模型列表接口（可选）';
+  epTts.placeholder = 'TTS 声音列表接口（可选）';
+  epVrm.placeholder = '语音大模型列表接口（可选）';
+
   const savedEnabled = localStorage.getItem('dev_enabled');
   const savedBase = localStorage.getItem('dev_llm_base');
   const savedKey = localStorage.getItem('dev_api_key');

@@ -10,7 +10,10 @@
     "llmBase": "",
     "authHeader": "Authorization",
     "authScheme": "Bearer",
-    "modelsEndpoint": "/models"
+    "modelsEndpoint": "/models",
+    "asrModelsEndpoint": "",
+    "ttsVoicesEndpoint": "",
+    "voiceModelsEndpoint": ""
   },
   "defaults": {
     "llm": ["gpt-4o-mini", "claude-3.5-haiku", "qwen2.5-14b"],

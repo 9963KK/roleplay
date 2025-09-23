@@ -624,7 +624,27 @@ function renderModelsPanel() {
             ? json.data.map((m) => m.id).filter(Boolean)
             : (json?.models || []);
           if (ids.length) {
-            populate({ llm: ids, asr: [], ttsVoices: [], voiceModels: [] });
+            // LLM 成功
+            const lists = { llm: ids, asr: [], ttsVoices: [], voiceModels: [] };
+            const fetchOptional = async (field, endpoint) => {
+              if (!endpoint) return [];
+              try {
+                const r = await fetch(`${base}${endpoint}`, {
+                  headers: { [appConfig?.dev?.authHeader || 'Authorization']: `${appConfig?.dev?.authScheme || 'Bearer'} ${key}` }
+                });
+                const j = await r.json();
+                if (Array.isArray(j?.data)) return j.data.map((x) => x.id || x.name).filter(Boolean);
+                return j?.items || j?.models || [];
+              } catch { return []; }
+            };
+            Promise.all([
+              fetchOptional('asr', appConfig?.dev?.asrModelsEndpoint),
+              fetchOptional('ttsVoices', appConfig?.dev?.ttsVoicesEndpoint),
+              fetchOptional('voiceModels', appConfig?.dev?.voiceModelsEndpoint)
+            ]).then(([asrL, ttsL, vrmL]) => {
+              lists.asr = asrL; lists.ttsVoices = ttsL; lists.voiceModels = vrmL;
+              populate(lists);
+            });
           }
         })
         .catch(() => {});
