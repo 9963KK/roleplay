@@ -398,7 +398,22 @@ function sendMessage() {
         appConfig.dev.enabled = true;
         appConfig.dev.llmBase = localStorage.getItem('dev_llm_base') || appConfig.dev.llmBase;
         localStorage.getItem('dev_api_key');
-        callTextLLMDev(text).then(writeAI);
+        // 流式输出
+        let acc = '';
+        callTextLLMDevStream(
+          text,
+          (delta) => {
+            acc += delta;
+            const contentBox = typingDiv.querySelector('.message-content');
+            if (contentBox) contentBox.innerHTML = acc;
+          },
+          () => {
+            writeAI(acc || '');
+          },
+          (err) => {
+            writeAI(`调用失败：${err?.message || err}`);
+          }
+        );
       });
     } else {
       const aiTs = Date.now();
@@ -456,6 +471,57 @@ async function callTextLLMDev(prompt) {
     return text;
   } catch (e) {
     return `调用失败：${e?.message || e}`;
+  }
+}
+
+// 流式（SSE）输出
+async function callTextLLMDevStream(prompt, onDelta, onDone, onError) {
+  try {
+    const base = localStorage.getItem('dev_llm_base') || appConfig?.dev?.llmBase;
+    const key = localStorage.getItem('dev_api_key') || '';
+    const model = localStorage.getItem('cfg_llm_model') || (appConfig.defaults?.llm?.[0] || '');
+    if (!base || !key || !model) throw new Error('缺少 base/key/model');
+
+    const res = await fetch(`${base}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+        Authorization: `Bearer ${key}`
+      },
+      body: JSON.stringify({ model, stream: true, messages: [{ role: 'user', content: prompt }] })
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || `HTTP ${res.status}`);
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const parts = buffer.split('\n\n');
+      buffer = parts.pop();
+      for (const part of parts) {
+        const lines = part.split('\n').filter(Boolean);
+        for (const line of lines) {
+          const m = line.match(/^data:\s*(.*)$/);
+          if (!m) continue;
+          const data = m[1];
+          if (data === '[DONE]') { onDone && onDone(); return; }
+          try {
+            const json = JSON.parse(data);
+            const piece = json?.choices?.[0]?.delta?.content || json?.choices?.[0]?.message?.content || '';
+            if (piece) onDelta && onDelta(piece);
+          } catch (e) {}
+        }
+      }
+    }
+    onDone && onDone();
+  } catch (e) {
+    onError && onError(e);
   }
 }
 
