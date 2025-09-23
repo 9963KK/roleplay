@@ -502,7 +502,6 @@ function renderModelsPanel() {
         <button id="btn-save-models" class="btn">保存</button>
         <button id="btn-reset-models" class="btn btn-secondary">恢复默认</button>
       </div>
-      <div class="hint">提示：真实的 API Key/baseUrl 仅在后端配置，前端只负责选择可见选项。</div>
     </div>
   `;
 
