@@ -15,6 +15,9 @@
   --chat-user-bg: #eaf8f3; /* 极浅绿色替代琥珀 */
   /* UI 尺寸变量 */
   --avatar-size: 40px;
+  /* 列表优化变量 */
+  --hover-bg: rgba(0,0,0,0.04);
+  --badge-bg: #f1f5f9;
 }
 
 [data-theme="dark"] {
@@ -29,6 +32,8 @@
   --chip-bg: linear-gradient(135deg, var(--accent-2), var(--accent-1));
   --chat-ai-bg: #111827;
   --chat-user-bg: #0b3b2d;
+  --hover-bg: rgba(255,255,255,0.06);
+  --badge-bg: rgba(255,255,255,0.08);
 }
 
 * {
@@ -236,6 +241,8 @@ body {
   flex: 1;              /* 占满剩余空间 */
   overflow-y: auto;     /* 内部滚动 */
   padding-bottom: 72px; /* 预留FAB空间，避免遮挡最后一项 */
+  -webkit-font-smoothing: antialiased;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Microsoft YaHei', 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* 底部操作区，承载新建对话按钮 */
@@ -266,19 +273,21 @@ body {
 .history-item {
   display: flex;
   gap: 12px;
-  padding: 12px;
+  padding: 14px 16px;
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
   overflow: hidden; /* 防止内容溢出边框 */
+  align-items: center;
 }
 
 .history-item:hover {
-  background: rgba(0,0,0,0.03);
+  background: var(--hover-bg);
   transform: translateY(-1px);
 }
+.history-item:focus-visible { outline: 2px solid var(--accent-1); outline-offset: 2px; }
 
 .history-item.active {
   background: var(--chip-bg);
@@ -286,9 +295,9 @@ body {
 }
 
 .history-main { flex: 1; min-width: 0; }
-.history-title { display: flex; justify-content: space-between; margin-bottom: 4px; gap: 8px; min-width: 0; }
-.history-name { font-weight: bold; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.history-time { color: var(--text-secondary); font-size: 12px; }
+.history-title { display: flex; justify-content: space-between; margin-bottom: 2px; gap: 8px; min-width: 0; align-items: center; }
+.history-name { font-weight: 600; font-size: 15px; letter-spacing: 0; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-time { color: var(--text-secondary); font-size: 12px; background: var(--badge-bg); padding: 2px 8px; border-radius: 999px; line-height: 1; }
 .history-desc { color: var(--text-secondary); font-size: 12px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .history-preview { color: #f5deb3; opacity: 0.85; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* 防止长文本撑破布局 */
