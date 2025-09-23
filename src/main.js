@@ -1029,6 +1029,11 @@ document.addEventListener('DOMContentLoaded', () => {
   renderCharacterDropdown();
   renderCharacterManagement();
   loadConversation(currentCharacter.id);
+  // 初始化头部头像与名称，避免默认字体为0导致看不到字符
+  const initAvatar = document.getElementById('currentCharacterAvatar');
+  if (initAvatar) initAvatar.innerHTML = getPixelAvatarByName(currentCharacter.name);
+  const initName = document.getElementById('currentCharacterName');
+  if (initName) initName.textContent = currentCharacter.name;
   updateStats();
 
   // 设置页默认显示人物设置
@@ -1043,26 +1048,9 @@ document.addEventListener('DOMContentLoaded', () => {
     renderHistoryList();
   });
 
-  // 主题初始化与切换
-  const savedTheme = localStorage.getItem('theme') || 'dark';
-  document.body.setAttribute('data-theme', savedTheme);
-
-  // 初始化主题切换控件状态
-  const seg = document.querySelector('.theme-toggle');
-  const syncSegState = () => {
-    seg?.querySelectorAll('.seg-btn').forEach((btn) => {
-      btn.classList.toggle('active', btn.dataset.theme === (localStorage.getItem('theme') || 'dark'));
-    });
-  };
-  syncSegState();
-  seg?.addEventListener('click', (e) => {
-    const btn = e.target.closest('.seg-btn');
-    if (!btn) return;
-    const theme = btn.dataset.theme;
-    document.body.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-    syncSegState();
-  });
+  // 固定浅色主题
+  document.body.setAttribute('data-theme', 'light');
+  localStorage.setItem('theme', 'light');
 
   const avatarEl = document.getElementById('currentCharacterAvatar');
   avatarEl?.addEventListener('click', (e) => {

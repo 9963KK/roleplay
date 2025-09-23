@@ -23,23 +23,7 @@
   --modal-border: #e5e7eb;
 }
 
-[data-theme="dark"] {
-  --bg-gradient-start: #0b1221;
-  --bg-gradient-end: #0f172a;
-  --panel-bg: #0f172a;
-  --panel-border: #334155;
-  --text-primary: #e5e7eb;
-  --text-secondary: #94a3b8;
-  --accent-1: #10a37f;
-  --accent-2: #34d399;
-  --chip-bg: linear-gradient(135deg, var(--accent-2), var(--accent-1));
-  --chat-ai-bg: #111827;
-  --chat-user-bg: #0b3b2d;
-  --hover-bg: rgba(255,255,255,0.06);
-  --badge-bg: rgba(255,255,255,0.08);
-  --modal-bg: #0f172a;
-  --modal-border: #334155;
-}
+/* 深色主题已禁用，固定浅色主题 */
 
 * {
   margin: 0;
