@@ -440,18 +440,25 @@ function showSettingsTab(event, tab) {
   panels[tab]?.classList.remove('hidden');
 }
 
-// 解析环境变量中的 JSON 列表（Vite: import.meta.env）
+// 运行时配置：从 /app-config.json 读取，替代 Vite 前缀暴露
+let appConfig = null;
+function loadAppConfig() {
+  if (appConfig) return Promise.resolve(appConfig);
+  return fetch('/app-config.json', { cache: 'no-store' })
+    .then((r) => r.json())
+    .then((cfg) => (appConfig = cfg))
+    .catch(() => (appConfig = { defaults: {} }));
+}
+
 function readEnvList(key, fallback) {
-  try {
-    // 在 Vite 中使用 import.meta.env 读取；若不存在，使用回退值
-    const raw = (import.meta && import.meta.env && import.meta.env[key]) || '';
-    if (!raw) return fallback;
-    // 支持两种形式：JSON 字符串或以逗号分隔的字符串
-    if (raw.trim().startsWith('[')) return JSON.parse(raw);
-    return raw.split(',').map((s) => s.trim()).filter(Boolean);
-  } catch (e) {
-    return fallback;
-  }
+  const map = {
+    VITE_LLM_MODELS: appConfig?.defaults?.llm,
+    VITE_ASR_MODELS: appConfig?.defaults?.asr,
+    VITE_TTS_VOICES: appConfig?.defaults?.ttsVoices,
+    VITE_VOICE_MODELS: appConfig?.defaults?.voiceModels
+  };
+  const arr = map[key];
+  return Array.isArray(arr) && arr.length ? arr : fallback;
 }
 
 function getEnvConfigOptions() {
@@ -540,7 +547,7 @@ function renderModelsPanel() {
   populate(getEnvConfigOptions());
 
   // 若配置了后端接口，则尝试拉取可见列表并覆盖
-  const remoteUrl = (import.meta && import.meta.env && import.meta.env.VITE_VISIBLE_MODELS_URL) || '';
+  const remoteUrl = appConfig?.visibleModelsUrl || '';
   if (remoteUrl) {
     fetch(remoteUrl)
       .then((r) => r.json())
@@ -648,6 +655,8 @@ function startVoiceCall() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  // 先加载运行时配置，再初始化应用（避免读取为空）
+  loadAppConfig().then(() => {
   initializeCharacters();
   initializeConversations();
   renderCharacterList();
@@ -660,7 +669,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 设置页默认显示人物设置
   showSettingsTab({ currentTarget: document.querySelector('.settings-menu .menu-item') }, 'characters');
 
-  // 渲染模型设置（无感配置：从 env 读取候选项，前端仅选择）
+  // 渲染模型设置（从 app-config/admin/接口 读取候选）
   renderModelsPanel();
 
   // 绑定侧边栏搜索
@@ -761,6 +770,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCharacterManagement();
     updateStats();
     closeCharacterModal();
+  });
   });
 });
 
