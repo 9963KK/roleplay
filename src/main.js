@@ -36,6 +36,9 @@ let characters = [
 
 let currentCharacter = characters[0];
 let conversations = {};
+// 历史会话归档：每个人物可有多个旧会话
+let archivedSessions = {}; // { [charId]: Array<{ id:string, messages:Message[] }> }
+let viewingArchived = null; // { charId, sessionId } 当查看归档会话时标记
 let editingCharacterId = null;
 
 function initializeCharacters() {
@@ -55,6 +58,7 @@ function initializeConversations() {
         timestamp: ts
       }
     ];
+    archivedSessions[char.id] = [];
   });
 }
 
@@ -139,18 +143,24 @@ function renderHistoryList() {
 
   const keyword = (document.getElementById('historySearch')?.value || '').trim().toLowerCase();
 
-  const historyData = characters
-    .map((char) => {
-      const msgs = conversations[char.id] || [];
-      const lastMsg = msgs[msgs.length - 1];
-      const lastTs = lastMsg?.timestamp ?? estimateTimestampFromLastActive(char.lastActive) ?? 0;
-      return { char, lastMsg, lastTs };
-    })
-    .sort((a, b) => b.lastTs - a.lastTs);
+  const historyData = [];
+  characters.forEach((char) => {
+    const currentMsgs = conversations[char.id] || [];
+    if (currentMsgs.length) {
+      const last = currentMsgs[currentMsgs.length - 1];
+      historyData.push({ type: 'current', char, sessionId: 'current', lastMsg: last, lastTs: last.timestamp });
+    }
+    (archivedSessions[char.id] || []).forEach((s) => {
+      const lm = s.messages[s.messages.length - 1];
+      historyData.push({ type: 'archived', char, sessionId: s.id, lastMsg: lm, lastTs: lm?.timestamp || 0 });
+    });
+  });
+  historyData.sort((a, b) => b.lastTs - a.lastTs);
 
-  historyData.forEach(({ char, lastMsg, lastTs }) => {
+  historyData.forEach((itemObj) => {
+    const { char, type, sessionId, lastMsg, lastTs } = itemObj;
     const timeLabel = lastTs ? formatRelativeTime(lastTs) : '';
-    const previewText = lastMsg ? lastMsg.text : '暂无对话';
+    const previewText = lastMsg ? lastMsg.text : (type === 'archived' ? '历史会话' : '暂无对话');
 
     // 搜索过滤：按人物名或最后一句话匹配
     if (keyword && !(char.name.toLowerCase().includes(keyword) || previewText.toLowerCase().includes(keyword))) {
@@ -159,7 +169,14 @@ function renderHistoryList() {
 
     const item = document.createElement('div');
     item.className = 'history-item';
-    item.onclick = () => selectCharacter(char.id);
+    item.onclick = () => {
+      if (type === 'archived') {
+        loadArchivedSession(char.id, sessionId);
+      } else {
+        viewingArchived = null;
+        selectCharacter(char.id);
+      }
+    };
 
     item.innerHTML = `
       <div class="history-main">
@@ -172,6 +189,18 @@ function renderHistoryList() {
 
     listContainer.appendChild(item);
   });
+}
+
+function loadArchivedSession(charId, sessionId) {
+  const messagesContainer = document.getElementById('chatMessages');
+  if (!messagesContainer) return;
+  messagesContainer.innerHTML = '';
+  const session = (archivedSessions[charId] || []).find((s) => s.id === sessionId);
+  if (!session) return;
+  viewingArchived = { charId, sessionId };
+  session.messages.forEach((m) => addMessageToUI(m));
+  const header = document.querySelector('.chat-header .character-name');
+  if (header) header.textContent = (characters.find((c) => c.id === charId)?.name || '') + '（历史会话）';
 }
 
 function renderCharacterSwitcher() {
@@ -356,6 +385,8 @@ function sendMessage() {
     timestamp: nowTs
   };
 
+  // 若正在查看历史会话，则跳回当前会话
+  viewingArchived = null;
   conversations[currentCharacter.id].push(userMessage);
   addMessageToUI(userMessage);
   input.value = '';
@@ -975,9 +1006,14 @@ window.setTheme = (theme) => {
 // 新建对话：为当前人物创建一条空会话并切换到该人物
 window.newConversation = () => {
   const cid = currentCharacter.id;
-  if (!conversations[cid]) conversations[cid] = [];
-  // 清空当前人物的消息，视为新会话
+  const currentMsgs = conversations[cid] || [];
+  if (currentMsgs.length) {
+    // 归档为旧会话
+    archivedSessions[cid] = archivedSessions[cid] || [];
+    archivedSessions[cid].push({ id: `${cid}-${Date.now()}`, messages: currentMsgs });
+  }
   conversations[cid] = [];
+  viewingArchived = null;
   loadConversation(cid);
   renderHistoryList();
 };
