@@ -118,6 +118,38 @@ function render() {
     localStorage.setItem('dev_api_key', devKey.value.trim());
     alert('已保存开发配置');
   });
+
+  // 一键获取模型：基于 dev 配置从各端点拉取并填充
+  document.getElementById('btn-fetch-models')?.addEventListener('click', async () => {
+    const base = devBase.value.trim();
+    const key = devKey.value.trim();
+    if (!base || !key) return alert('请先填写 LLM Base 与 API Key');
+
+    const authHeader = appConfig?.dev?.authHeader || 'Authorization';
+    const authScheme = appConfig?.dev?.authScheme || 'Bearer';
+    const modelsEp = appConfig?.dev?.modelsEndpoint || '/models';
+    const fetchList = async (url) => {
+      if (!url) return [];
+      try {
+        const r = await fetch(url, { headers: { [authHeader]: `${authScheme} ${key}` } });
+        const j = await r.json();
+        if (Array.isArray(j?.data)) return j.data.map((x) => x.id || x.name).filter(Boolean);
+        return j?.items || j?.models || [];
+      } catch { return []; }
+    };
+
+    const llm = await fetchList(`${base}${modelsEp}`);
+    const asr = await fetchList(appConfig?.dev?.asrModelsEndpoint ? `${base}${appConfig.dev.asrModelsEndpoint}` : '');
+    const tts = await fetchList(appConfig?.dev?.ttsVoicesEndpoint ? `${base}${appConfig.dev.ttsVoicesEndpoint}` : '');
+    const vrm = await fetchList(appConfig?.dev?.voiceModelsEndpoint ? `${base}${appConfig.dev.voiceModelsEndpoint}` : '');
+
+    localStorage.setItem(KEYS.llm, JSON.stringify(llm));
+    localStorage.setItem(KEYS.asr, JSON.stringify(asr));
+    localStorage.setItem(KEYS.tts, JSON.stringify(tts));
+    localStorage.setItem(KEYS.vrm, JSON.stringify(vrm));
+    alert('已从服务商接口获取并更新可见列表');
+    render();
+  });
 }
 
 render();

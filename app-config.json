@@ -16,9 +16,9 @@
     "voiceModelsEndpoint": ""
   },
   "defaults": {
-    "llm": ["gpt-4o-mini", "claude-3.5-haiku", "qwen2.5-14b"],
-    "asr": ["deepgram:nova-2", "whisper:large-v3", "azure:speech"],
-    "ttsVoices": ["openai:alloy", "elevenlabs:Rachel", "azure:zh-CN-XiaoxiaoNeural"],
-    "voiceModels": ["openai:gpt-4o-realtime", "deepgram:aura"]
+    "llm": [],
+    "asr": [],
+    "ttsVoices": [],
+    "voiceModels": []
   }
 }
