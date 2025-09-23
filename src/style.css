@@ -616,7 +616,8 @@ body {
 .hint { color: var(--text-secondary); font-size: 12px; }
 
 /* 等待回复（打字）动画 */
-.message.typing .message-content { background: var(--panel-bg); }
+.message.typing { align-items: center; }
+.message.typing .message-content { background: var(--panel-bg); margin-top: 0; }
 .typing-dots { display: flex; gap: 6px; align-items: center; }
 .typing-dots span { width: 6px; height: 6px; background: var(--text-secondary); border-radius: 50%; display: inline-block; opacity: 0.4; animation: blink 1.4s infinite both; }
 .typing-dots span:nth-child(2) { animation-delay: .2s; }
