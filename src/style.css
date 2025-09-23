@@ -300,7 +300,7 @@ body {
 .history-item {
   display: flex;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 14px 12px 14px 16px;
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
   border-radius: 12px;
@@ -325,6 +325,17 @@ body {
 .history-title { display: flex; justify-content: space-between; margin-bottom: 2px; gap: 8px; min-width: 0; align-items: center; }
 .history-name { font-weight: 600; font-size: 15px; letter-spacing: 0; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .history-time { color: var(--text-secondary); font-size: 12px; background: var(--badge-bg); padding: 2px 8px; border-radius: 999px; line-height: 1; }
+.history-del-btn {
+  margin-left: 6px;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  padding: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.history-del-btn:hover { background: var(--hover-bg); color: var(--text-primary); }
+.history-del-btn:active { transform: scale(0.98); }
 .history-desc { color: var(--text-secondary); font-size: 12px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .history-preview { color: #f5deb3; opacity: 0.85; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* 防止长文本撑破布局 */

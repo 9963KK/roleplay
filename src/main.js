@@ -204,7 +204,22 @@ function renderHistoryList() {
           <span class="history-time">${timeLabel}</span>
         </div>
       </div>
+      <button class="history-del-btn" title="删除" aria-label="删除">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+          <path d="M10 11v6"></path>
+          <path d="M14 11v6"></path>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+        </svg>
+      </button>
     `;
+
+    const delBtn = item.querySelector('.history-del-btn');
+    delBtn.onclick = (e) => {
+      e.stopPropagation();
+      deleteHistoryItem(char.id, type, sessionId);
+    };
 
     listContainer.appendChild(item);
   });
@@ -219,6 +234,26 @@ function loadArchivedSession(charId, sessionId) {
   viewingArchived = { charId, sessionId };
   session.messages.forEach((m) => addMessageToUI(m));
   // 不修改标题后缀，保持与当前会话一致
+}
+
+function deleteHistoryItem(charId, type, sessionId) {
+  const ok = window.confirm('确定删除该对话吗？删除后无法恢复');
+  if (!ok) return;
+  if (type === 'archived') {
+    archivedSessions[charId] = (archivedSessions[charId] || []).filter((s) => s.id !== sessionId);
+    if (viewingArchived && viewingArchived.charId === charId && viewingArchived.sessionId === sessionId) {
+      viewingArchived = null;
+      const messagesContainer = document.getElementById('chatMessages');
+      if (messagesContainer) messagesContainer.innerHTML = '';
+    }
+  } else {
+    conversations[charId] = [];
+    if (!viewingArchived && currentCharacter.id === charId) {
+      const messagesContainer = document.getElementById('chatMessages');
+      if (messagesContainer) messagesContainer.innerHTML = '';
+    }
+  }
+  renderHistoryList();
 }
 
 function renderCharacterSwitcher() {
