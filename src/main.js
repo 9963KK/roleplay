@@ -443,7 +443,8 @@ function showSettingsTab(event, tab) {
 // 解析环境变量中的 JSON 列表（Vite: import.meta.env）
 function readEnvList(key, fallback) {
   try {
-    const raw = (typeof import !== 'undefined' && import.meta && import.meta.env && import.meta.env[key]) || '';
+    // 在 Vite 中使用 import.meta.env 读取；若不存在，使用回退值
+    const raw = (import.meta && import.meta.env && import.meta.env[key]) || '';
     if (!raw) return fallback;
     // 支持两种形式：JSON 字符串或以逗号分隔的字符串
     if (raw.trim().startsWith('[')) return JSON.parse(raw);
