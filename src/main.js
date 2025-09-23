@@ -483,30 +483,59 @@ function generateAIResponse(userText, character) {
   return characterResponses[Math.floor(Math.random() * characterResponses.length)];
 }
 
-// 简单的 Markdown 渲染器（最小可用，避免引第三方包）
+// 轻量 Markdown 渲染（适配标题/列表/代码块/链接/粗斜体/引用/段落）
 function renderMarkdown(src) {
   if (!src) return '';
-  let html = src
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-  // 粗体 **text**
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  // 斜体 *text*
-  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // 先整体转义
+  let text = src.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // 代码块 ```lang\ncode\n```
+  const codeBlocks = [];
+  text = text.replace(/```([a-zA-Z0-9_-]+)?\n([\s\S]*?)```/g, (_, lang, code) => {
+    const id = `__CODE_${codeBlocks.length}__`;
+    codeBlocks.push(`<pre><code class="lang-${lang || 'plain'}">${code}</code></pre>`);
+    return id;
+  });
+
+  // 标题
+  text = text.replace(/^######\s+(.+)$/gm, '<h6>$1</h6>')
+             .replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>')
+             .replace(/^####\s+(.+)$/gm, '<h4>$1</h4>')
+             .replace(/^###\s+(.+)$/gm, '<h3>$1</h3>')
+             .replace(/^##\s+(.+)$/gm, '<h2>$1</h2>')
+             .replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
+
+  // 引用 > text
+  text = text.replace(/^>\s+(.+)$/gm, '<blockquote>$1</blockquote>');
+
+  // 有序/无序列表
+  // 无序
+  text = text.replace(/^(?:\-|\*)\s+(.+)$/gm, '<li>$1</li>');
+  text = text.replace(/(?:<li>.*<\/li>\n?)+/gs, (m) => `<ul>${m}</ul>`);
+  // 有序 1. item
+  text = text.replace(/^(\d+)\.\s+(.+)$/gm, '<li>$2</li>');
+  text = text.replace(/(?:<li>.*<\/li>\n?)+/gs, (m) => m.startsWith('<ul>') ? m : `<ol>${m}</ol>`);
+
+  // 链接 [text](url)
+  text = text.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
   // 行内代码 `code`
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-  // 标题 ##、###
-  html = html.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
-  html = html.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
-  html = html.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
-  // 列表 - item
-  html = html.replace(/^\-\s+(.+)$/gm, '<li>$1</li>');
-  html = html.replace(/(<li>.*<\/li>)(\n(?!(<li>|$)))/gs, '$1');
-  if (/\<li\>/.test(html)) html = html.replace(/(?:<li>.*<\/li>\n?)+/gs, (m) => `<ul>${m}</ul>`);
-  // 段落
-  html = html.replace(/^(?!<h\d|<ul|<li|<\/li|<\/ul|<code|<pre)(.+)$/gm, '<p>$1</p>');
-  return html;
+  text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // 粗体/斜体
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  text = text.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+
+  // 分隔线 --- 或 ***
+  text = text.replace(/^(-{3,}|\*{3,})$/gm, '<hr/>');
+
+  // 段落：两行之间空行
+  text = text.replace(/(^|\n)(?!<(h\d|ul|ol|li|pre|blockquote|hr|p|code))([^\n]+)(?=\n|$)/g, (m, p1, _tag, content) => `${p1}<p>${content}</p>`);
+
+  // 回填代码块占位
+  codeBlocks.forEach((html, i) => {
+    text = text.replace(`__CODE_${i}__`, html);
+  });
+  return text;
 }
 
 // 前端直连（无后端）调用演示：仅用于开发自测
