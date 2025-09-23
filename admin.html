@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>模型可见性管理</title>
+  </head>
+  <body data-theme="dark">
+    <div class="container">
+      <div class="header">
+        <h1>模型可见性管理（Admin）</h1>
+        <div class="header-buttons">
+          <a href="/index.html" class="btn-back" style="text-decoration:none;">
+            <svg class="icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>返回</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="settings-container" style="height: calc(100vh - 120px);">
+        <div class="settings-content" style="width:100%">
+          <div class="settings-header">
+            <h2>可见列表配置</h2>
+          </div>
+
+          <div id="adminRoot" class="form-section"></div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/admin.js"></script>
+  </body>
+  </html>
+
+

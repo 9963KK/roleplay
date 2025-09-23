@@ -456,10 +456,19 @@ function readEnvList(key, fallback) {
 
 function getEnvConfigOptions() {
   // 后端/部署层可通过 .env 注入以下列表（不含敏感信息）
-  const llm = readEnvList('VITE_LLM_MODELS', ['gpt-4o-mini', 'claude-3.5-haiku', 'qwen2.5-14b']);
-  const asr = readEnvList('VITE_ASR_MODELS', ['deepgram:nova-2', 'whisper:large-v3', 'azure:speech']);
-  const ttsVoices = readEnvList('VITE_TTS_VOICES', ['openai:alloy', 'elevenlabs:Rachel', 'azure:zh-CN-XiaoxiaoNeural']);
-  const voiceModels = readEnvList('VITE_VOICE_MODELS', ['openai:gpt-4o-realtime', 'deepgram:aura']);
+  const envLlm = readEnvList('VITE_LLM_MODELS', ['gpt-4o-mini', 'claude-3.5-haiku', 'qwen2.5-14b']);
+  const envAsr = readEnvList('VITE_ASR_MODELS', ['deepgram:nova-2', 'whisper:large-v3', 'azure:speech']);
+  const envTts = readEnvList('VITE_TTS_VOICES', ['openai:alloy', 'elevenlabs:Rachel', 'azure:zh-CN-XiaoxiaoNeural']);
+  const envVrm = readEnvList('VITE_VOICE_MODELS', ['openai:gpt-4o-realtime', 'deepgram:aura']);
+
+  // 可见列表优先：由 admin 页面写入 localStorage
+  const parse = (k, def) => {
+    try { const raw = localStorage.getItem(k); return raw ? JSON.parse(raw) : def; } catch { return def; }
+  };
+  const llm = parse('visible_llm_models', envLlm);
+  const asr = parse('visible_asr_models', envAsr);
+  const ttsVoices = parse('visible_tts_voices', envTts);
+  const voiceModels = parse('visible_voice_models', envVrm);
   return { llm, asr, ttsVoices, voiceModels };
 }
 
