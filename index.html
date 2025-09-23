@@ -102,38 +102,49 @@
         <div class="settings-container">
           <div class="settings-sidebar">
             <div class="settings-menu">
-              <div class="menu-item active" onclick="showSettingsTab(event, 'characters')">人物管理</div>
-              <div class="menu-item" onclick="showSettingsTab(event, 'interface')">界面设置</div>
-              <div class="menu-item" onclick="showSettingsTab(event, 'notifications')">通知设置</div>
-              <div class="menu-item" onclick="showSettingsTab(event, 'privacy')">隐私设置</div>
+              <div class="menu-item active" onclick="showSettingsTab(event, 'characters')">人物设置</div>
+              <div class="menu-item" onclick="showSettingsTab(event, 'models')">模型设置</div>
             </div>
           </div>
 
           <div class="settings-content">
-            <div class="settings-header">
-              <h2>自定义人物管理</h2>
-              <button class="btn" onclick="showAddCharacterModal()">+ 添加人物</button>
+            <!-- 人物设置面板 -->
+            <div class="settings-panel" id="panel-characters">
+              <div class="settings-header">
+                <h2>自定义人物管理</h2>
+                <button class="btn" onclick="showAddCharacterModal()">+ 添加人物</button>
+              </div>
+
+              <div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center;">
+                <div>主题：</div>
+                <button class="btn-secondary" onclick="setTheme('light')">浅色</button>
+                <button class="btn-secondary" onclick="setTheme('dark')">深色</button>
+              </div>
+
+              <div class="character-management" id="characterManagement">
+                <!-- 人物管理卡片将通过JavaScript动态生成 -->
+              </div>
+
+              <div class="stats-panel">
+                <h3>统计信息</h3>
+                <div class="stats-grid">
+                  <div class="stat-item">总人物数量：<span id="totalCharacters">3</span></div>
+                  <div class="stat-item">总对话次数：<span id="totalConversations">127</span></div>
+                  <div class="stat-item">平均对话时长：<span id="avgDuration">8.5分钟</span></div>
+                  <div class="stat-item">今日对话次数：<span id="todayConversations">12</span></div>
+                  <div class="stat-item">最活跃人物：<span id="mostActive">智慧导师</span></div>
+                  <div class="stat-item">系统运行时间：<span id="uptime">30天</span></div>
+                </div>
+              </div>
             </div>
 
-            <div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center;">
-              <div>主题：</div>
-              <button class="btn-secondary" onclick="setTheme('light')">浅色</button>
-              <button class="btn-secondary" onclick="setTheme('dark')">深色</button>
-            </div>
-
-            <div class="character-management" id="characterManagement">
-              <!-- 人物管理卡片将通过JavaScript动态生成 -->
-            </div>
-
-            <div class="stats-panel">
-              <h3>统计信息</h3>
-              <div class="stats-grid">
-                <div class="stat-item">总人物数量：<span id="totalCharacters">3</span></div>
-                <div class="stat-item">总对话次数：<span id="totalConversations">127</span></div>
-                <div class="stat-item">平均对话时长：<span id="avgDuration">8.5分钟</span></div>
-                <div class="stat-item">今日对话次数：<span id="todayConversations">12</span></div>
-                <div class="stat-item">最活跃人物：<span id="mostActive">智慧导师</span></div>
-                <div class="stat-item">系统运行时间：<span id="uptime">30天</span></div>
+            <!-- 模型设置面板 -->
+            <div class="settings-panel hidden" id="panel-models">
+              <div class="settings-header">
+                <h2>模型设置</h2>
+              </div>
+              <div id="modelList" class="model-list">
+                <!-- 模型列表由JS渲染 -->
               </div>
             </div>
           </div>

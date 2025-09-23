@@ -429,13 +429,15 @@ function showChat() {
 }
 
 function showSettingsTab(event, tab) {
-  document.querySelectorAll('.menu-item').forEach((item) => {
-    item.classList.remove('active');
-  });
-
+  document.querySelectorAll('.menu-item').forEach((item) => item.classList.remove('active'));
   event.currentTarget.classList.add('active');
-  // 预留：根据 tab 值切换不同的设置内容
-  console.log('切换到标签页:', tab);
+
+  const panels = {
+    characters: document.getElementById('panel-characters'),
+    models: document.getElementById('panel-models')
+  };
+  Object.values(panels).forEach((p) => p?.classList.add('hidden'));
+  panels[tab]?.classList.remove('hidden');
 }
 
 function showAddCharacterModal() {
@@ -535,6 +537,9 @@ document.addEventListener('DOMContentLoaded', () => {
   renderCharacterManagement();
   loadConversation(currentCharacter.id);
   updateStats();
+
+  // 设置页默认显示人物设置
+  showSettingsTab({ currentTarget: document.querySelector('.settings-menu .menu-item') }, 'characters');
 
   // 绑定侧边栏搜索
   const searchInput = document.getElementById('historySearch');
