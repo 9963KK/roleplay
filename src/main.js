@@ -199,8 +199,7 @@ function loadArchivedSession(charId, sessionId) {
   if (!session) return;
   viewingArchived = { charId, sessionId };
   session.messages.forEach((m) => addMessageToUI(m));
-  const header = document.querySelector('.chat-header .character-name');
-  if (header) header.textContent = (characters.find((c) => c.id === charId)?.name || '') + '（历史会话）';
+  // 不修改标题后缀，保持与当前会话一致
 }
 
 function renderCharacterSwitcher() {
@@ -1039,12 +1038,16 @@ window.setTheme = (theme) => {
 // 新建对话：为当前人物创建一条空会话并切换到该人物
 window.newConversation = () => {
   const cid = currentCharacter.id;
+  // 若当前是历史会话视图，则回到“当前会话”再新建
+  if (viewingArchived && viewingArchived.charId === cid) viewingArchived = null;
+
   const currentMsgs = conversations[cid] || [];
-  if (currentMsgs.length) {
-    // 归档为旧会话
-    archivedSessions[cid] = archivedSessions[cid] || [];
+  archivedSessions[cid] = archivedSessions[cid] || [];
+  // 仅当当前会话非空时才归档
+  if (currentMsgs && currentMsgs.length > 0) {
     archivedSessions[cid].push({ id: `${cid}-${Date.now()}`, messages: currentMsgs });
   }
+  // 创建新的空会话（保留欢迎语可选，这里不保留）
   conversations[cid] = [];
   viewingArchived = null;
   loadConversation(cid);
