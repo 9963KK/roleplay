@@ -363,24 +363,36 @@ function sendMessage() {
   bumpCurrentCharacterActivity();
 
   setTimeout(() => {
-    const aiTs = Date.now();
-    const aiMessage = {
-      type: 'ai',
-      author: currentCharacter.name,
-      text: generateAIResponse(text, currentCharacter),
-      time: formatClock(aiTs),
-      timestamp: aiTs
+    const writeAI = (content) => {
+      const aiTs = Date.now();
+      const aiMessage = {
+        type: 'ai',
+        author: currentCharacter.name,
+        text: content,
+        time: formatClock(aiTs),
+        timestamp: aiTs
+      };
+      conversations[currentCharacter.id].push(aiMessage);
+      addMessageToUI(aiMessage);
+      const messagesContainer = document.getElementById('chatMessages');
+      if (messagesContainer) messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      bumpCurrentCharacterActivity();
     };
 
-    conversations[currentCharacter.id].push(aiMessage);
-    addMessageToUI(aiMessage);
-
-    const messagesContainer = document.getElementById('chatMessages');
-    if (messagesContainer) {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    if (localStorage.getItem('dev_enabled') === 'true') {
+      loadAppConfig().then(() => {
+        // 将 admin 保存的 base 覆盖到 appConfig.dev
+        appConfig.dev = appConfig.dev || {};
+        appConfig.dev.enabled = true;
+        appConfig.dev.llmBase = localStorage.getItem('dev_llm_base') || appConfig.dev.llmBase;
+        localStorage.getItem('dev_api_key');
+        callTextLLMDev(text).then(writeAI);
+      });
+    } else {
+      const aiTs = Date.now();
+      writeAI(generateAIResponse(text, currentCharacter));
     }
-
-    bumpCurrentCharacterActivity();
+    
   }, 1000);
 }
 
@@ -405,6 +417,34 @@ function generateAIResponse(userText, character) {
 
   const characterResponses = responses[character.name] || ['这是一个很好的问题，让我为你分析一下。'];
   return characterResponses[Math.floor(Math.random() * characterResponses.length)];
+}
+
+// 前端直连（无后端）调用演示：仅用于开发自测
+async function callTextLLMDev(prompt) {
+  if (!appConfig?.dev?.enabled) {
+    console.warn('dev 直连未启用');
+    return '（本地直连未启用）';
+  }
+  const base = appConfig.dev.llmBase;
+  const key = localStorage.getItem('dev_api_key') || '';
+  const model = localStorage.getItem('cfg_llm_model') || (appConfig.defaults?.llm?.[0] || '');
+  if (!base || !key || !model) return '（请在 Admin 页或本地存储中配置 dev_api_key/模型）';
+
+  try {
+    const res = await fetch(`${base}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        [appConfig.dev.authHeader || 'Authorization']: `${appConfig.dev.authScheme || 'Bearer'} ${key}`
+      },
+      body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await res.json();
+    const text = data?.choices?.[0]?.message?.content || JSON.stringify(data);
+    return text;
+  } catch (e) {
+    return `调用失败：${e?.message || e}`;
+  }
 }
 
 function handleKeyPress(event) {

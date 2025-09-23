@@ -93,6 +93,23 @@ function render() {
     Object.values(KEYS).forEach((k) => localStorage.removeItem(k));
     render();
   });
+
+  // 保存本地直连配置
+  const devEnabled = document.getElementById('devEnabled');
+  const devBase = document.getElementById('devBase');
+  const devKey = document.getElementById('devKey');
+  const savedEnabled = localStorage.getItem('dev_enabled');
+  const savedBase = localStorage.getItem('dev_llm_base');
+  const savedKey = localStorage.getItem('dev_api_key');
+  if (savedEnabled !== null) devEnabled.checked = savedEnabled === 'true';
+  if (savedBase) devBase.value = savedBase;
+  if (savedKey) devKey.value = savedKey;
+  document.getElementById('btn-save-dev')?.addEventListener('click', () => {
+    localStorage.setItem('dev_enabled', devEnabled.checked ? 'true' : 'false');
+    localStorage.setItem('dev_llm_base', devBase.value.trim());
+    localStorage.setItem('dev_api_key', devKey.value.trim());
+    alert('已保存开发配置');
+  });
 }
 
 render();

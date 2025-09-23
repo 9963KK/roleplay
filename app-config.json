@@ -5,6 +5,12 @@
   "asrWs": "wss://api.example.com/asr/stream",
   "realtimeWs": "wss://api.example.com/voice/realtime",
   "visibleModelsUrl": "",
+  "dev": {
+    "enabled": false,
+    "llmBase": "",
+    "authHeader": "Authorization",
+    "authScheme": "Bearer"
+  },
   "defaults": {
     "llm": ["gpt-4o-mini", "claude-3.5-haiku", "qwen2.5-14b"],
     "asr": ["deepgram:nova-2", "whisper:large-v3", "azure:speech"],

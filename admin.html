@@ -27,6 +27,23 @@
           </div>
 
           <div id="adminRoot" class="form-section"></div>
+          <div class="model-item" style="flex-direction:column; align-items:flex-start; gap:8px; margin-top:12px;">
+            <div class="model-name">开发直连（仅本地调试用，勿用于生产）</div>
+            <label style="display:flex;gap:8px;align-items:center;">
+              <input type="checkbox" id="devEnabled" /> 启用 dev 直连
+            </label>
+            <label style="display:flex;gap:8px;align-items:center; width:100%;">
+              <span style="width:120px;color:#94a3b8;">LLM Base</span>
+              <input id="devBase" style="flex:1;" placeholder="https://api.openai.com/v1" />
+            </label>
+            <label style="display:flex;gap:8px;align-items:center; width:100%;">
+              <span style="width:120px;color:#94a3b8;">API Key</span>
+              <input id="devKey" style="flex:1;" placeholder="sk-..." />
+            </label>
+            <div class="form-actions">
+              <button id="btn-save-dev" class="btn">保存开发配置</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
