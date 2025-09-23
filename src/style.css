@@ -157,6 +157,24 @@ body {
   color: var(--text-primary);
 }
 
+/* 返回按钮（胶囊风格） */
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.12s ease, box-shadow 0.2s ease;
+}
+.btn-back:hover { background: rgba(0,0,0,0.04); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.btn-back:active { transform: translateY(1px); }
+.btn-back .icon { transition: transform 0.15s ease; }
+.btn-back:hover .icon { transform: translateX(-2px); }
+
 /* 顶部仅图标按钮样式 */
 .icon-btn { 
   background: transparent; 
