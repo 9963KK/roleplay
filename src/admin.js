@@ -1,5 +1,17 @@
 import './style.css';
 
+// 运行时配置（admin 页面也需要加载 app-config.json）
+let appConfig = { dev: {} };
+function loadAppConfig() {
+  return fetch('/app-config.json', { cache: 'no-store' })
+    .then((r) => r.json())
+    .then((cfg) => {
+      appConfig = cfg || { dev: {} };
+      return appConfig;
+    })
+    .catch(() => (appConfig = { dev: {} }));
+}
+
 // 管理页：编辑“前端可见”的模型/声音列表，存储到 localStorage
 const KEYS = {
   llm: 'visible_llm_models',
@@ -224,6 +236,7 @@ function render() {
   });
 }
 
-render();
+// 等待加载配置后再渲染，避免 appConfig 未定义
+loadAppConfig().then(() => render());
 
 
