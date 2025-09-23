@@ -86,11 +86,18 @@ function renderList(title, key, defaults, selected) {
     <div class="model-name">${title}</div>
     <label class="admin-row"><span class="admin-label">Base</span><input class="admin-input" id="${cfg.baseKey}" value="${baseVal}" placeholder="${cfg.placeholder[0]}" /></label>
     <label class="admin-row"><span class="admin-label">API Key</span><input class="admin-input" id="${cfg.keyKey}" value="${keyVal}" placeholder="${cfg.placeholder[1]}" /></label>
-    <div style="display:flex; gap:8px;">
-      <button data-fetch-key="${key}" class="btn btn-small">获取模型</button>
-      <button data-save-cred="${key}" class="btn btn-small btn-secondary">保存此服务凭据</button>
+    <div class="admin-row" style="justify-content:space-between; gap:8px;">
+      <div style="display:flex; gap:8px;">
+        <button data-fetch-key="${key}" class="btn btn-small">获取模型</button>
+        <button data-save-cred="${key}" class="btn btn-small btn-secondary">保存此服务凭据</button>
+        <button data-select-all="${key}" class="btn btn-small btn-secondary">全选</button>
+        <button data-select-none="${key}" class="btn btn-small btn-secondary">不选</button>
+      </div>
+      <input class="admin-input" data-search="${key}" placeholder="搜索模型…" style="max-width:320px;" />
     </div>
-    ${rows}
+    <div class="model-list-items" data-list-key="${key}">
+      ${rows}
+    </div>
   </div>`;
 }
 
@@ -232,6 +239,33 @@ function render() {
       localStorage.setItem(map.baseKey, baseInput?.value.trim() || '');
       localStorage.setItem(map.keyKey, keyInput?.value.trim() || '');
       alert('已保存该服务的凭据');
+    });
+  });
+
+  // 全选/不选
+  const setAll = (key, val) => {
+    const box = document.querySelector(`[data-list-key="${key}"]`);
+    if (!box) return;
+    box.querySelectorAll('input[type="checkbox"][data-key]')?.forEach((c) => (c.checked = val));
+  };
+  document.querySelectorAll('[data-select-all]')?.forEach((btn) => {
+    btn.addEventListener('click', () => setAll(btn.getAttribute('data-select-all'), true));
+  });
+  document.querySelectorAll('[data-select-none]')?.forEach((btn) => {
+    btn.addEventListener('click', () => setAll(btn.getAttribute('data-select-none'), false));
+  });
+
+  // 搜索过滤
+  document.querySelectorAll('[data-search]')?.forEach((input) => {
+    input.addEventListener('input', () => {
+      const key = input.getAttribute('data-search');
+      const q = input.value.trim().toLowerCase();
+      const box = document.querySelector(`[data-list-key="${key}"]`);
+      if (!box) return;
+      box.querySelectorAll('label')?.forEach((lab) => {
+        const text = (lab.textContent || '').toLowerCase();
+        lab.style.display = q ? (text.includes(q) ? 'flex' : 'none') : 'flex';
+      });
     });
   });
 }
