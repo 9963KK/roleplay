@@ -133,13 +133,31 @@ function render() {
 
   // 一键获取模型：基于 dev 配置从各端点拉取并填充
   const doFetchFor = async (serviceKey) => {
-    const base = devBase.value.trim();
-    const key = devKey.value.trim();
-    if (!base || !key) return alert('请先填写 LLM Base 与 API Key');
+    // 映射每个服务对应的输入 ID 与端点
+    const map = {
+      [KEYS.llm]: {
+        baseId: 'dev_llm_base', keyId: 'dev_api_key', endpoint: appConfig?.dev?.modelsEndpoint || '/models'
+      },
+      [KEYS.asr]: {
+        baseId: 'dev_asr_base', keyId: 'dev_asr_key', endpoint: appConfig?.dev?.asrModelsEndpoint || ''
+      },
+      [KEYS.tts]: {
+        baseId: 'dev_tts_base', keyId: 'dev_tts_key', endpoint: appConfig?.dev?.ttsVoicesEndpoint || ''
+      },
+      [KEYS.vrm]: {
+        baseId: 'dev_vrm_base', keyId: 'dev_vrm_key', endpoint: appConfig?.dev?.voiceModelsEndpoint || ''
+      }
+    }[serviceKey];
+
+    if (!map) return;
+
+    const base = (document.getElementById(map.baseId)?.value || localStorage.getItem(map.baseId) || '').trim();
+    const key = (document.getElementById(map.keyId)?.value || localStorage.getItem(map.keyId) || '').trim();
+    if (!base || !key) return alert('请先填写该服务的 Base 与 API Key');
 
     const authHeader = appConfig?.dev?.authHeader || 'Authorization';
     const authScheme = appConfig?.dev?.authScheme || 'Bearer';
-    const modelsEp = appConfig?.dev?.modelsEndpoint || '/models';
+    const modelsEp = map.endpoint; // 对应服务端点
     const fetchList = async (url) => {
       if (!url) return [];
       try {
@@ -151,9 +169,9 @@ function render() {
     };
 
     const llm = serviceKey === KEYS.llm ? await fetchList(`${base}${modelsEp}`) : [];
-    const asr = serviceKey === KEYS.asr ? await fetchList(appConfig?.dev?.asrModelsEndpoint ? `${base}${appConfig.dev.asrModelsEndpoint}` : '') : [];
-    const tts = serviceKey === KEYS.tts ? await fetchList(appConfig?.dev?.ttsVoicesEndpoint ? `${base}${appConfig.dev.ttsVoicesEndpoint}` : '') : [];
-    const vrm = serviceKey === KEYS.vrm ? await fetchList(appConfig?.dev?.voiceModelsEndpoint ? `${base}${appConfig.dev.voiceModelsEndpoint}` : '') : [];
+    const asr = serviceKey === KEYS.asr ? await fetchList(modelsEp ? `${base}${modelsEp}` : '') : [];
+    const tts = serviceKey === KEYS.tts ? await fetchList(modelsEp ? `${base}${modelsEp}` : '') : [];
+    const vrm = serviceKey === KEYS.vrm ? await fetchList(modelsEp ? `${base}${modelsEp}` : '') : [];
 
     if (llm.length) localStorage.setItem(KEYS.llm, JSON.stringify(llm));
     if (asr.length) localStorage.setItem(KEYS.asr, JSON.stringify(asr));
