@@ -9,7 +9,8 @@
     "enabled": false,
     "llmBase": "",
     "authHeader": "Authorization",
-    "authScheme": "Bearer"
+    "authScheme": "Bearer",
+    "modelsEndpoint": "/models"
   },
   "defaults": {
     "llm": ["gpt-4o-mini", "claude-3.5-haiku", "qwen2.5-14b"],

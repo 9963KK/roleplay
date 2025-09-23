@@ -604,6 +604,32 @@ function renderModelsPanel() {
       })
       .catch(() => {});
   }
+
+  // 无后端：尝试从 dev 模型端点自动拉取（需要 dev_enabled=true 且配置了 base/key）
+  if (localStorage.getItem('dev_enabled') === 'true') {
+    const base = localStorage.getItem('dev_llm_base') || appConfig?.dev?.llmBase;
+    const key = localStorage.getItem('dev_api_key');
+    const ep = appConfig?.dev?.modelsEndpoint || '/models';
+    if (base && key) {
+      fetch(`${base}${ep}`, {
+        headers: {
+          [appConfig?.dev?.authHeader || 'Authorization']:
+            `${appConfig?.dev?.authScheme || 'Bearer'} ${key}`
+        }
+      })
+        .then((r) => r.json())
+        .then((json) => {
+          // 兼容 OpenAI 格式：{ data: [ {id,object} ] }
+          const ids = Array.isArray(json?.data)
+            ? json.data.map((m) => m.id).filter(Boolean)
+            : (json?.models || []);
+          if (ids.length) {
+            populate({ llm: ids, asr: [], ttsVoices: [], voiceModels: [] });
+          }
+        })
+        .catch(() => {});
+    }
+  }
 }
 
 function showAddCharacterModal() {
