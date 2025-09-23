@@ -362,6 +362,16 @@ function sendMessage() {
 
   bumpCurrentCharacterActivity();
 
+  // 插入“等待回复”气泡
+  const messagesContainer = document.getElementById('chatMessages');
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'message ai typing';
+  typingDiv.innerHTML = `
+    <div class="message-avatar">${getPixelAvatarByName(currentCharacter.name)}</div>
+    <div class="message-content"><div class="typing-dots"><span></span><span></span><span></span></div></div>
+  `;
+  messagesContainer.appendChild(typingDiv);
+
   setTimeout(() => {
     const writeAI = (content) => {
       const aiTs = Date.now();
@@ -372,6 +382,8 @@ function sendMessage() {
         time: formatClock(aiTs),
         timestamp: aiTs
       };
+      // 移除等待回复
+      typingDiv.remove();
       conversations[currentCharacter.id].push(aiMessage);
       addMessageToUI(aiMessage);
       const messagesContainer = document.getElementById('chatMessages');
