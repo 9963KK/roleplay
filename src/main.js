@@ -440,6 +440,92 @@ function showSettingsTab(event, tab) {
   panels[tab]?.classList.remove('hidden');
 }
 
+// 解析环境变量中的 JSON 列表（Vite: import.meta.env）
+function readEnvList(key, fallback) {
+  try {
+    const raw = (typeof import !== 'undefined' && import.meta && import.meta.env && import.meta.env[key]) || '';
+    if (!raw) return fallback;
+    // 支持两种形式：JSON 字符串或以逗号分隔的字符串
+    if (raw.trim().startsWith('[')) return JSON.parse(raw);
+    return raw.split(',').map((s) => s.trim()).filter(Boolean);
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function getEnvConfigOptions() {
+  // 后端/部署层可通过 .env 注入以下列表（不含敏感信息）
+  const llm = readEnvList('VITE_LLM_MODELS', ['gpt-4o-mini', 'claude-3.5-haiku', 'qwen2.5-14b']);
+  const asr = readEnvList('VITE_ASR_MODELS', ['deepgram:nova-2', 'whisper:large-v3', 'azure:speech']);
+  const ttsVoices = readEnvList('VITE_TTS_VOICES', ['openai:alloy', 'elevenlabs:Rachel', 'azure:zh-CN-XiaoxiaoNeural']);
+  const voiceModels = readEnvList('VITE_VOICE_MODELS', ['openai:gpt-4o-realtime', 'deepgram:aura']);
+  return { llm, asr, ttsVoices, voiceModels };
+}
+
+function renderModelsPanel() {
+  const panel = document.getElementById('panel-models');
+  if (!panel) return;
+
+  const { llm, asr, ttsVoices, voiceModels } = getEnvConfigOptions();
+
+  const get = (k, d) => localStorage.getItem(k) || d;
+  const state = {
+    llm: get('cfg_llm_model', llm[0] || ''),
+    asr: get('cfg_asr_model', asr[0] || ''),
+    tts: get('cfg_tts_voice', ttsVoices[0] || ''),
+    vrm: get('cfg_voice_model', voiceModels[0] || '')
+  };
+
+  const optionsHTML = (arr, selected) =>
+    arr.map((v) => `<option value="${v}" ${v === selected ? 'selected' : ''}>${v}</option>`).join('');
+
+  panel.innerHTML = `
+    <div class="form-section">
+      <div class="form-row">
+        <label>文本 LLM</label>
+        <select id="sel-llm" class="select">${optionsHTML(llm, state.llm)}</select>
+      </div>
+      <div class="form-row">
+        <label>ASR（语音识别）</label>
+        <select id="sel-asr" class="select">${optionsHTML(asr, state.asr)}</select>
+      </div>
+      <div class="form-row">
+        <label>TTS 声音</label>
+        <select id="sel-tts" class="select">${optionsHTML(ttsVoices, state.tts)}</select>
+      </div>
+      <div class="form-row">
+        <label>语音大模型</label>
+        <select id="sel-vrm" class="select">${optionsHTML(voiceModels, state.vrm)}</select>
+      </div>
+      <div class="form-actions">
+        <button id="btn-save-models" class="btn">保存</button>
+        <button id="btn-reset-models" class="btn btn-secondary">恢复默认</button>
+      </div>
+      <div class="hint">提示：真实的 API Key/baseUrl 仅在后端配置，前端只负责选择可见选项。</div>
+    </div>
+  `;
+
+  document.getElementById('btn-save-models')?.addEventListener('click', () => {
+    const llmSel = document.getElementById('sel-llm');
+    const asrSel = document.getElementById('sel-asr');
+    const ttsSel = document.getElementById('sel-tts');
+    const vrmSel = document.getElementById('sel-vrm');
+    localStorage.setItem('cfg_llm_model', llmSel?.value || '');
+    localStorage.setItem('cfg_asr_model', asrSel?.value || '');
+    localStorage.setItem('cfg_tts_voice', ttsSel?.value || '');
+    localStorage.setItem('cfg_voice_model', vrmSel?.value || '');
+    alert('已保存模型与声音选择');
+  });
+
+  document.getElementById('btn-reset-models')?.addEventListener('click', () => {
+    localStorage.removeItem('cfg_llm_model');
+    localStorage.removeItem('cfg_asr_model');
+    localStorage.removeItem('cfg_tts_voice');
+    localStorage.removeItem('cfg_voice_model');
+    renderModelsPanel();
+  });
+}
+
 function showAddCharacterModal() {
   editingCharacterId = null;
   const modalTitle = document.getElementById('modalTitle');
@@ -540,6 +626,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 设置页默认显示人物设置
   showSettingsTab({ currentTarget: document.querySelector('.settings-menu .menu-item') }, 'characters');
+
+  // 渲染模型设置（无感配置：从 env 读取候选项，前端仅选择）
+  renderModelsPanel();
 
   // 绑定侧边栏搜索
   const searchInput = document.getElementById('historySearch');
