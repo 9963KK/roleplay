@@ -137,6 +137,8 @@ function renderHistoryList() {
   if (!listContainer) return;
   listContainer.innerHTML = '';
 
+  const keyword = (document.getElementById('historySearch')?.value || '').trim().toLowerCase();
+
   const historyData = characters
     .map((char) => {
       const msgs = conversations[char.id] || [];
@@ -149,6 +151,11 @@ function renderHistoryList() {
   historyData.forEach(({ char, lastMsg, lastTs }) => {
     const timeLabel = lastTs ? formatRelativeTime(lastTs) : '';
     const previewText = lastMsg ? lastMsg.text : '暂无对话';
+
+    // 搜索过滤：按人物名或最后一句话匹配
+    if (keyword && !(char.name.toLowerCase().includes(keyword) || previewText.toLowerCase().includes(keyword))) {
+      return;
+    }
 
     const item = document.createElement('div');
     item.className = 'history-item';
@@ -528,6 +535,12 @@ document.addEventListener('DOMContentLoaded', () => {
   renderCharacterManagement();
   loadConversation(currentCharacter.id);
   updateStats();
+
+  // 绑定侧边栏搜索
+  const searchInput = document.getElementById('historySearch');
+  searchInput?.addEventListener('input', () => {
+    renderHistoryList();
+  });
 
   // 主题初始化与切换
   const savedTheme = localStorage.getItem('theme') || 'dark';

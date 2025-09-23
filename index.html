@@ -35,10 +35,15 @@
 
         <div class="chat-container">
           <div class="sidebar">
-            <button class="btn-new-chat" onclick="newConversation()">＋ 新建对话</button>
+            <div class="sidebar-search">
+              <input type="text" id="historySearch" placeholder="搜索对话..." />
+            </div>
             <h3>历史对话</h3>
             <div class="history-list" id="historyList">
               <!-- 历史对话列表将通过JavaScript动态生成 -->
+            </div>
+            <div class="sidebar-footer">
+              <button class="btn-new-chat" onclick="newConversation()">＋ 新建对话</button>
             </div>
           </div>
 

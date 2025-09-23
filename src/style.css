@@ -173,8 +173,24 @@ body {
   background: transparent;
   border-right: 1px solid var(--panel-border);
   padding: 20px;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* 让内部列表滚动 */
 }
+
+/* 顶部搜索框 */
+.sidebar-search { margin-bottom: 16px; }
+.sidebar-search input {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel-bg);
+  color: var(--text-primary);
+  outline: none;
+}
+.sidebar-search input::placeholder { color: var(--text-secondary); }
 
 .btn-new-chat {
   width: 100%;
@@ -208,7 +224,12 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  flex: 1;              /* 占满剩余空间 */
+  overflow-y: auto;     /* 内部滚动 */
 }
+
+/* 底部操作区，承载新建对话按钮 */
+.sidebar-footer { margin-top: 16px; }
 
 .history-item {
   display: flex;
