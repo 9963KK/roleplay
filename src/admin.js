@@ -59,10 +59,24 @@ function renderList(title, key, defaults, selected) {
     })
     .join('');
   // 每个分区顶部带“获取模型”按钮
-  return `<div class="model-item" style="flex-direction:column; align-items:flex-start; gap:8px;">
-    <div class="model-name" style="display:flex;justify-content:space-between;width:100%;align-items:center;">
-      <span>${title}</span>
+  // 每个分区包含：提供商配置 + 获取模型 + 列表
+  const cfg = {
+    [KEYS.llm]: { baseKey: 'dev_llm_base', keyKey: 'dev_api_key', placeholder: ['https://api.openai.com/v1', 'sk-...'] },
+    [KEYS.asr]: { baseKey: 'dev_asr_base', keyKey: 'dev_asr_key', placeholder: ['wss://provider.com/asr 或 https://api.asr.com/v1', 'asr-密钥'] },
+    [KEYS.tts]: { baseKey: 'dev_tts_base', keyKey: 'dev_tts_key', placeholder: ['https://tts.example.com', 'tts-密钥'] },
+    [KEYS.vrm]: { baseKey: 'dev_vrm_base', keyKey: 'dev_vrm_key', placeholder: ['https://voice.example.com', 'voice-密钥'] }
+  }[key];
+
+  const baseVal = localStorage.getItem(cfg.baseKey) || '';
+  const keyVal = localStorage.getItem(cfg.keyKey) || '';
+
+  return `<div class="model-item" style="flex-direction:column; align-items:flex-start; gap:10px;">
+    <div class="model-name">${title}</div>
+    <label class="admin-row"><span class="admin-label">Base</span><input class="admin-input" id="${cfg.baseKey}" value="${baseVal}" placeholder="${cfg.placeholder[0]}" /></label>
+    <label class="admin-row"><span class="admin-label">API Key</span><input class="admin-input" id="${cfg.keyKey}" value="${keyVal}" placeholder="${cfg.placeholder[1]}" /></label>
+    <div style="display:flex; gap:8px;">
       <button data-fetch-key="${key}" class="btn btn-small">获取模型</button>
+      <button data-save-cred="${key}" class="btn btn-small btn-secondary">保存此服务凭据</button>
     </div>
     ${rows}
   </div>`;
@@ -101,14 +115,7 @@ function render() {
 
   // 保存本地直连配置
   const devEnabled = document.getElementById('devEnabled');
-  const devBase = document.getElementById('devBase');
-  const devKey = document.getElementById('devKey');
-  const asrBase = document.getElementById('devAsrBase');
-  const asrKey = document.getElementById('devAsrKey');
-  const ttsBase = document.getElementById('devTtsBase');
-  const ttsKey = document.getElementById('devTtsKey');
-  const vrmBase = document.getElementById('devVrmBase');
-  const vrmKey = document.getElementById('devVrmKey');
+  // 统一改为按服务分区的控件（在列表区里生成，所以从 localStorage 读取/保存，不再在此处引用）
   // 端点自定义
   const epAsr = document.createElement('input');
   const epTts = document.createElement('input');
@@ -118,27 +125,9 @@ function render() {
   epVrm.placeholder = '语音大模型列表接口（可选）';
 
   const savedEnabled = localStorage.getItem('dev_enabled');
-  const savedBase = localStorage.getItem('dev_llm_base');
-  const savedKey = localStorage.getItem('dev_api_key');
   if (savedEnabled !== null) devEnabled.checked = savedEnabled === 'true';
-  if (savedBase) devBase.value = savedBase;
-  if (savedKey) devKey.value = savedKey;
-  asrBase.value = localStorage.getItem('dev_asr_base') || '';
-  asrKey.value = localStorage.getItem('dev_asr_key') || '';
-  ttsBase.value = localStorage.getItem('dev_tts_base') || '';
-  ttsKey.value = localStorage.getItem('dev_tts_key') || '';
-  vrmBase.value = localStorage.getItem('dev_vrm_base') || '';
-  vrmKey.value = localStorage.getItem('dev_vrm_key') || '';
   document.getElementById('btn-save-dev')?.addEventListener('click', () => {
     localStorage.setItem('dev_enabled', devEnabled.checked ? 'true' : 'false');
-    localStorage.setItem('dev_llm_base', devBase.value.trim());
-    localStorage.setItem('dev_api_key', devKey.value.trim());
-    localStorage.setItem('dev_asr_base', asrBase.value.trim());
-    localStorage.setItem('dev_asr_key', asrKey.value.trim());
-    localStorage.setItem('dev_tts_base', ttsBase.value.trim());
-    localStorage.setItem('dev_tts_key', ttsKey.value.trim());
-    localStorage.setItem('dev_vrm_base', vrmBase.value.trim());
-    localStorage.setItem('dev_vrm_key', vrmKey.value.trim());
     alert('已保存开发配置');
   });
 
@@ -178,6 +167,25 @@ function render() {
 
   document.querySelectorAll('[data-fetch-key]')?.forEach((btn) => {
     btn.addEventListener('click', () => doFetchFor(btn.getAttribute('data-fetch-key')));
+  });
+
+  // 保存各分区凭据
+  document.querySelectorAll('[data-save-cred]')?.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const service = btn.getAttribute('data-save-cred');
+      const map = {
+        [KEYS.llm]: { baseKey: 'dev_llm_base', keyKey: 'dev_api_key' },
+        [KEYS.asr]: { baseKey: 'dev_asr_base', keyKey: 'dev_asr_key' },
+        [KEYS.tts]: { baseKey: 'dev_tts_base', keyKey: 'dev_tts_key' },
+        [KEYS.vrm]: { baseKey: 'dev_vrm_base', keyKey: 'dev_vrm_key' }
+      }[service];
+      if (!map) return;
+      const baseInput = document.getElementById(map.baseKey);
+      const keyInput = document.getElementById(map.keyKey);
+      localStorage.setItem(map.baseKey, baseInput?.value.trim() || '');
+      localStorage.setItem(map.keyKey, keyInput?.value.trim() || '');
+      alert('已保存该服务的凭据');
+    });
   });
 }
 
