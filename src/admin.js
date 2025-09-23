@@ -159,13 +159,30 @@ function render() {
     const authScheme = appConfig?.dev?.authScheme || 'Bearer';
     const modelsEp = map.endpoint; // 对应服务端点
     const fetchList = async (url) => {
-      if (!url) return [];
+      if (!url) {
+        alert('未配置该服务的模型列表端点');
+        return [];
+      }
       try {
         const r = await fetch(url, { headers: { [authHeader]: `${authScheme} ${key}` } });
-        const j = await r.json();
-        if (Array.isArray(j?.data)) return j.data.map((x) => x.id || x.name).filter(Boolean);
-        return j?.items || j?.models || [];
-      } catch { return []; }
+        if (!r.ok) {
+          const text = await r.text().catch(() => '');
+          alert(`获取失败（${r.status}）\n${text}`);
+          return [];
+        }
+        const j = await r.json().catch(() => ({}));
+        let arr = [];
+        if (Array.isArray(j)) arr = j;
+        else if (Array.isArray(j?.data)) arr = j.data;
+        else if (Array.isArray(j?.items)) arr = j.items;
+        else if (Array.isArray(j?.models)) arr = j.models;
+        const ids = arr.map((x) => x?.id || x?.name || x).filter(Boolean);
+        if (!ids.length) alert('已请求成功，但响应中未找到模型列表字段（尝试 data/items/models 或数组）。');
+        return ids;
+      } catch (e) {
+        alert(`请求异常：${e?.message || e}`);
+        return [];
+      }
     };
 
     const llm = serviceKey === KEYS.llm ? await fetchList(`${base}${modelsEp}`) : [];
