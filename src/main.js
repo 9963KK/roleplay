@@ -465,12 +465,15 @@ function sendMessage() {
             acc += delta;
             const contentBox = typingDiv.querySelector('.message-content');
             if (contentBox) contentBox.innerHTML = acc;
+            const mc = document.getElementById('chatMessages');
+            if (mc) mc.scrollTop = mc.scrollHeight; // 流式期间保持滚动到底
           },
           () => {
             writeAI(acc || '');
           },
           (err) => {
-            writeAI(`调用失败：${err?.message || err}`);
+            const reason = (typeof err === 'string') ? err : (err?.message || '未知错误');
+            writeAI(`调用失败：${reason}`);
           }
         );
       });
@@ -590,20 +593,44 @@ async function callTextLLMDev(prompt) {
 
 // 流式（SSE）输出
 async function callTextLLMDevStream(prompt, onDelta, onDone, onError) {
+  const controller = new AbortController();
+  const INACTIVITY_TIMEOUT_MS = 20000; // 20s 无增量则视为卡住
+  const HARD_TIMEOUT_MS = 120000; // 2 分钟硬超时
+  let inactivityTimer = null;
+  let hardTimer = null;
+  const resetInactivity = () => {
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(() => {
+      controller.abort('idle-timeout');
+    }, INACTIVITY_TIMEOUT_MS);
+  };
+  const clearTimers = () => {
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    if (hardTimer) clearTimeout(hardTimer);
+    inactivityTimer = null;
+    hardTimer = null;
+  };
   try {
     const base = localStorage.getItem('dev_llm_base') || appConfig?.dev?.llmBase;
     const key = localStorage.getItem('dev_api_key') || '';
     const model = localStorage.getItem('cfg_llm_model') || (appConfig.defaults?.llm?.[0] || '');
     if (!base || !key || !model) throw new Error('缺少 base/key/model');
 
+    const authHeaderName = (appConfig?.dev?.authHeader) || 'Authorization';
+    const authScheme = (appConfig?.dev?.authScheme) || 'Bearer';
+
+    hardTimer = setTimeout(() => controller.abort('hard-timeout'), HARD_TIMEOUT_MS);
+    resetInactivity();
+
     const res = await fetch(`${base}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Accept: 'text/event-stream',
-        Authorization: `Bearer ${key}`
+        [authHeaderName]: `${authScheme} ${key}`
       },
-      body: JSON.stringify({ model, stream: true, messages: [{ role: 'user', content: prompt }] })
+      body: JSON.stringify({ model, stream: true, messages: [{ role: 'user', content: prompt }] }),
+      signal: controller.signal
     });
     if (!res.ok) {
       const text = await res.text();
@@ -615,26 +642,32 @@ async function callTextLLMDevStream(prompt, onDelta, onDone, onError) {
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
+      resetInactivity();
       buffer += decoder.decode(value, { stream: true });
-      const parts = buffer.split('\n\n');
+      const parts = buffer.split(/\r?\n\r?\n/); // 兼容 CRLF
       buffer = parts.pop();
       for (const part of parts) {
-        const lines = part.split('\n').filter(Boolean);
-        for (const line of lines) {
+        const lines = part.split(/\r?\n/).filter(Boolean);
+        for (const raw of lines) {
+          const line = raw.replace(/\r$/, '');
           const m = line.match(/^data:\s*(.*)$/);
           if (!m) continue;
-          const data = m[1];
-          if (data === '[DONE]') { onDone && onDone(); return; }
+          const data = (m[1] || '').trim();
+          if (data === '[DONE]') { clearTimers(); onDone && onDone(); return; }
           try {
             const json = JSON.parse(data);
             const piece = json?.choices?.[0]?.delta?.content || json?.choices?.[0]?.message?.content || '';
             if (piece) onDelta && onDelta(piece);
-          } catch (e) {}
+          } catch (e) {
+            // 非 JSON 内容忽略
+          }
         }
       }
     }
+    clearTimers();
     onDone && onDone();
   } catch (e) {
+    clearTimers();
     onError && onError(e);
   }
 }
