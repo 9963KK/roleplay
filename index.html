@@ -115,10 +115,12 @@
                 <button class="btn" onclick="showAddCharacterModal()">+ 添加人物</button>
               </div>
 
-              <div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center;">
+              <div class="theme-row">
                 <div>主题：</div>
-                <button class="btn-secondary" onclick="setTheme('light')">浅色</button>
-                <button class="btn-secondary" onclick="setTheme('dark')">深色</button>
+                <div class="segmented theme-toggle" role="tablist" aria-label="主题">
+                  <button type="button" class="seg-btn" data-theme="light">浅色</button>
+                  <button type="button" class="seg-btn" data-theme="dark">深色</button>
+                </div>
               </div>
 
               <div class="character-management" id="characterManagement">

@@ -551,6 +551,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const savedTheme = localStorage.getItem('theme') || 'dark';
   document.body.setAttribute('data-theme', savedTheme);
 
+  // 初始化主题切换控件状态
+  const seg = document.querySelector('.theme-toggle');
+  const syncSegState = () => {
+    seg?.querySelectorAll('.seg-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.theme === (localStorage.getItem('theme') || 'dark'));
+    });
+  };
+  syncSegState();
+  seg?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.seg-btn');
+    if (!btn) return;
+    const theme = btn.dataset.theme;
+    document.body.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    syncSegState();
+  });
+
   const avatarEl = document.getElementById('currentCharacterAvatar');
   avatarEl?.addEventListener('click', (e) => {
     e.stopPropagation();
