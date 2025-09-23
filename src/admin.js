@@ -58,8 +58,12 @@ function renderList(title, key, defaults, selected) {
       </label>`;
     })
     .join('');
+  // 每个分区顶部带“获取模型”按钮
   return `<div class="model-item" style="flex-direction:column; align-items:flex-start; gap:8px;">
-    <div class="model-name">${title}</div>
+    <div class="model-name" style="display:flex;justify-content:space-between;width:100%;align-items:center;">
+      <span>${title}</span>
+      <button data-fetch-key="${key}" class="btn btn-small">获取模型</button>
+    </div>
     ${rows}
   </div>`;
 }
@@ -139,7 +143,7 @@ function render() {
   });
 
   // 一键获取模型：基于 dev 配置从各端点拉取并填充
-  document.getElementById('btn-fetch-models')?.addEventListener('click', async () => {
+  const doFetchFor = async (serviceKey) => {
     const base = devBase.value.trim();
     const key = devKey.value.trim();
     if (!base || !key) return alert('请先填写 LLM Base 与 API Key');
@@ -157,17 +161,23 @@ function render() {
       } catch { return []; }
     };
 
-    const llm = await fetchList(`${base}${modelsEp}`);
-    const asr = await fetchList(appConfig?.dev?.asrModelsEndpoint ? `${base}${appConfig.dev.asrModelsEndpoint}` : '');
-    const tts = await fetchList(appConfig?.dev?.ttsVoicesEndpoint ? `${base}${appConfig.dev.ttsVoicesEndpoint}` : '');
-    const vrm = await fetchList(appConfig?.dev?.voiceModelsEndpoint ? `${base}${appConfig.dev.voiceModelsEndpoint}` : '');
+    const llm = serviceKey === KEYS.llm ? await fetchList(`${base}${modelsEp}`) : [];
+    const asr = serviceKey === KEYS.asr ? await fetchList(appConfig?.dev?.asrModelsEndpoint ? `${base}${appConfig.dev.asrModelsEndpoint}` : '') : [];
+    const tts = serviceKey === KEYS.tts ? await fetchList(appConfig?.dev?.ttsVoicesEndpoint ? `${base}${appConfig.dev.ttsVoicesEndpoint}` : '') : [];
+    const vrm = serviceKey === KEYS.vrm ? await fetchList(appConfig?.dev?.voiceModelsEndpoint ? `${base}${appConfig.dev.voiceModelsEndpoint}` : '') : [];
 
-    localStorage.setItem(KEYS.llm, JSON.stringify(llm));
-    localStorage.setItem(KEYS.asr, JSON.stringify(asr));
-    localStorage.setItem(KEYS.tts, JSON.stringify(tts));
-    localStorage.setItem(KEYS.vrm, JSON.stringify(vrm));
-    alert('已从服务商接口获取并更新可见列表');
-    render();
+    if (llm.length) localStorage.setItem(KEYS.llm, JSON.stringify(llm));
+    if (asr.length) localStorage.setItem(KEYS.asr, JSON.stringify(asr));
+    if (tts.length) localStorage.setItem(KEYS.tts, JSON.stringify(tts));
+    if (vrm.length) localStorage.setItem(KEYS.vrm, JSON.stringify(vrm));
+    if (llm.length || asr.length || tts.length || vrm.length) {
+      alert('已更新');
+      render();
+    }
+  };
+
+  document.querySelectorAll('[data-fetch-key]')?.forEach((btn) => {
+    btn.addEventListener('click', () => doFetchFor(btn.getAttribute('data-fetch-key')));
   });
 }
 
