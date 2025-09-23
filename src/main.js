@@ -512,10 +512,10 @@ function getEnvConfigOptions() {
   const parse = (k, def) => {
     try { const raw = localStorage.getItem(k); return raw ? JSON.parse(raw) : def; } catch { return def; }
   };
-  const llm = parse('visible_llm_models', envLlm);
-  const asr = parse('visible_asr_models', envAsr);
-  const ttsVoices = parse('visible_tts_voices', envTts);
-  const voiceModels = parse('visible_voice_models', envVrm);
+  const llm = parse('visible_llm_models', envLlm).filter(Boolean);
+  const asr = parse('visible_asr_models', envAsr).filter(Boolean);
+  const ttsVoices = parse('visible_tts_voices', envTts).filter(Boolean);
+  const voiceModels = parse('visible_voice_models', envVrm).filter(Boolean);
   return { llm, asr, ttsVoices, voiceModels };
 }
 

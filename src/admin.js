@@ -68,6 +68,7 @@ function render() {
   const root = document.getElementById('adminRoot');
   const d = getDefaults();
   const v = getVisible();
+  // 若默认与本地均为空，则不渲染任何项（避免显示默认模型）
   root.innerHTML = `
     ${renderList('文本 LLM', KEYS.llm, d.llm, v.llm)}
     ${renderList('ASR（语音识别）', KEYS.asr, d.asr, v.asr)}
