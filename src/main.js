@@ -41,6 +41,25 @@ let archivedSessions = {}; // { [charId]: Array<{ id:string, messages:Message[] 
 let viewingArchived = null; // { charId, sessionId } 当查看归档会话时标记
 let editingCharacterId = null;
 
+// 发送状态：等待大模型返回时禁止再次发送
+let isAwaitingResponse = false;
+function setSendingState(pending) {
+  isAwaitingResponse = pending;
+  const input = document.getElementById('messageInput');
+  const sendBtn = document.querySelector('.send-btn');
+  if (input) {
+    input.disabled = pending;
+    if (pending) {
+      input.setAttribute('data-prev-ph', input.getAttribute('placeholder') || '');
+      input.setAttribute('placeholder', '正在生成回复…');
+    } else {
+      const prev = input.getAttribute('data-prev-ph');
+      if (prev !== null) input.setAttribute('placeholder', prev);
+    }
+  }
+  if (sendBtn) sendBtn.disabled = pending;
+}
+
 function initializeCharacters() {
   // 预留接口：未来可从后端或本地存储同步人物数据
 }
@@ -365,7 +384,7 @@ function addMessageToUI(message) {
     }
   } else {
     // 用户消息：时间在左侧，气泡在右侧
-    messageDiv.innerHTML = `
+  messageDiv.innerHTML = `
       <div class="message-time outside">${message.time}</div>
       <div class="message-content"><div class="message-text"></div></div>
       <div class="message-avatar">${avatarHTML}</div>
@@ -378,6 +397,7 @@ function addMessageToUI(message) {
 }
 
 function sendMessage() {
+  if (isAwaitingResponse) return; // 正在等待回复时禁止发送
   const input = document.getElementById('messageInput');
   if (!input) return;
   const text = input.value.trim();
@@ -399,7 +419,8 @@ function sendMessage() {
 
   bumpCurrentCharacterActivity();
 
-  // 插入“等待回复”气泡
+  // 进入等待状态并插入“等待回复”气泡
+  setSendingState(true);
   const messagesContainer = document.getElementById('chatMessages');
   const typingDiv = document.createElement('div');
   typingDiv.className = 'message ai typing';
@@ -412,20 +433,21 @@ function sendMessage() {
   setTimeout(() => {
     const writeAI = (content) => {
       const aiTs = Date.now();
-      const aiMessage = {
-        type: 'ai',
-        author: currentCharacter.name,
+    const aiMessage = {
+      type: 'ai',
+      author: currentCharacter.name,
         text: content,
         time: formatClock(aiTs),
         timestamp: aiTs
-      };
+    };
       // 移除等待回复
       typingDiv.remove();
-      conversations[currentCharacter.id].push(aiMessage);
-      addMessageToUI(aiMessage);
-      const messagesContainer = document.getElementById('chatMessages');
+    conversations[currentCharacter.id].push(aiMessage);
+    addMessageToUI(aiMessage);
+    const messagesContainer = document.getElementById('chatMessages');
       if (messagesContainer) messagesContainer.scrollTop = messagesContainer.scrollHeight;
       bumpCurrentCharacterActivity();
+      setSendingState(false);
     };
 
     if (localStorage.getItem('dev_enabled') === 'true') {
@@ -620,7 +642,9 @@ async function callTextLLMDevStream(prompt, onDelta, onDone, onError) {
 function handleKeyPress(event) {
   if (event.key === 'Enter') {
     event.preventDefault();
+    if (!isAwaitingResponse) {
     sendMessage();
+    }
   }
 }
 
