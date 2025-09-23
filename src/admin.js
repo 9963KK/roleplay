@@ -99,6 +99,12 @@ function render() {
   const devEnabled = document.getElementById('devEnabled');
   const devBase = document.getElementById('devBase');
   const devKey = document.getElementById('devKey');
+  const asrBase = document.getElementById('devAsrBase');
+  const asrKey = document.getElementById('devAsrKey');
+  const ttsBase = document.getElementById('devTtsBase');
+  const ttsKey = document.getElementById('devTtsKey');
+  const vrmBase = document.getElementById('devVrmBase');
+  const vrmKey = document.getElementById('devVrmKey');
   // 端点自定义
   const epAsr = document.createElement('input');
   const epTts = document.createElement('input');
@@ -113,10 +119,22 @@ function render() {
   if (savedEnabled !== null) devEnabled.checked = savedEnabled === 'true';
   if (savedBase) devBase.value = savedBase;
   if (savedKey) devKey.value = savedKey;
+  asrBase.value = localStorage.getItem('dev_asr_base') || '';
+  asrKey.value = localStorage.getItem('dev_asr_key') || '';
+  ttsBase.value = localStorage.getItem('dev_tts_base') || '';
+  ttsKey.value = localStorage.getItem('dev_tts_key') || '';
+  vrmBase.value = localStorage.getItem('dev_vrm_base') || '';
+  vrmKey.value = localStorage.getItem('dev_vrm_key') || '';
   document.getElementById('btn-save-dev')?.addEventListener('click', () => {
     localStorage.setItem('dev_enabled', devEnabled.checked ? 'true' : 'false');
     localStorage.setItem('dev_llm_base', devBase.value.trim());
     localStorage.setItem('dev_api_key', devKey.value.trim());
+    localStorage.setItem('dev_asr_base', asrBase.value.trim());
+    localStorage.setItem('dev_asr_key', asrKey.value.trim());
+    localStorage.setItem('dev_tts_base', ttsBase.value.trim());
+    localStorage.setItem('dev_tts_key', ttsKey.value.trim());
+    localStorage.setItem('dev_vrm_base', vrmBase.value.trim());
+    localStorage.setItem('dev_vrm_key', vrmKey.value.trim());
     alert('已保存开发配置');
   });
 

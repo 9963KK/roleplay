@@ -637,10 +637,27 @@ function renderModelsPanel() {
                 return j?.items || j?.models || [];
               } catch { return []; }
             };
+            const asrBase = localStorage.getItem('dev_asr_base') || base;
+            const asrKey = localStorage.getItem('dev_asr_key') || key;
+            const ttsBase = localStorage.getItem('dev_tts_base') || base;
+            const ttsKey = localStorage.getItem('dev_tts_key') || key;
+            const vrmBase = localStorage.getItem('dev_vrm_base') || base;
+            const vrmKey = localStorage.getItem('dev_vrm_key') || key;
+
+            const fetchFrom = (b, k, ep) => {
+              if (!ep || !b || !k) return Promise.resolve([]);
+              return fetch(`${b}${ep}`, {
+                headers: { [appConfig?.dev?.authHeader || 'Authorization']: `${appConfig?.dev?.authScheme || 'Bearer'} ${k}` }
+              })
+                .then((r) => r.json())
+                .then((j) => (Array.isArray(j?.data) ? j.data.map((x) => x.id || x.name).filter(Boolean) : (j?.items || j?.models || [])))
+                .catch(() => []);
+            };
+
             Promise.all([
-              fetchOptional('asr', appConfig?.dev?.asrModelsEndpoint),
-              fetchOptional('ttsVoices', appConfig?.dev?.ttsVoicesEndpoint),
-              fetchOptional('voiceModels', appConfig?.dev?.voiceModelsEndpoint)
+              fetchFrom(asrBase, asrKey, appConfig?.dev?.asrModelsEndpoint),
+              fetchFrom(ttsBase, ttsKey, appConfig?.dev?.ttsVoicesEndpoint),
+              fetchFrom(vrmBase, vrmKey, appConfig?.dev?.voiceModelsEndpoint)
             ]).then(([asrL, ttsL, vrmL]) => {
               lists.asr = asrL; lists.ttsVoices = ttsL; lists.voiceModels = vrmL;
               populate(lists);
