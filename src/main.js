@@ -476,63 +476,87 @@ function renderModelsPanel() {
   const panel = document.getElementById('panel-models');
   if (!panel) return;
 
-  const { llm, asr, ttsVoices, voiceModels } = getEnvConfigOptions();
+  const populate = (lists) => {
+    const { llm, asr, ttsVoices, voiceModels } = lists;
 
-  const get = (k, d) => localStorage.getItem(k) || d;
-  const state = {
-    llm: get('cfg_llm_model', llm[0] || ''),
-    asr: get('cfg_asr_model', asr[0] || ''),
-    tts: get('cfg_tts_voice', ttsVoices[0] || ''),
-    vrm: get('cfg_voice_model', voiceModels[0] || '')
+    const get = (k, d) => localStorage.getItem(k) || d;
+    const state = {
+      llm: get('cfg_llm_model', llm[0] || ''),
+      asr: get('cfg_asr_model', asr[0] || ''),
+      tts: get('cfg_tts_voice', ttsVoices[0] || ''),
+      vrm: get('cfg_voice_model', voiceModels[0] || '')
+    };
+
+    const optionsHTML = (arr, selected) =>
+      arr.map((v) => `<option value="${v}" ${v === selected ? 'selected' : ''}>${v}</option>`).join('');
+
+    panel.innerHTML = `
+      <div class="form-section">
+        <div class="form-row">
+          <label>文本 LLM</label>
+          <select id="sel-llm" class="select">${optionsHTML(llm, state.llm)}</select>
+        </div>
+        <div class="form-row">
+          <label>ASR（语音识别）</label>
+          <select id="sel-asr" class="select">${optionsHTML(asr, state.asr)}</select>
+        </div>
+        <div class="form-row">
+          <label>TTS 声音</label>
+          <select id="sel-tts" class="select">${optionsHTML(ttsVoices, state.tts)}</select>
+        </div>
+        <div class="form-row">
+          <label>语音大模型</label>
+          <select id="sel-vrm" class="select">${optionsHTML(voiceModels, state.vrm)}</select>
+        </div>
+        <div class="form-actions">
+          <button id="btn-save-models" class="btn">保存</button>
+          <button id="btn-reset-models" class="btn btn-secondary">恢复默认</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('btn-save-models')?.addEventListener('click', () => {
+      const llmSel = document.getElementById('sel-llm');
+      const asrSel = document.getElementById('sel-asr');
+      const ttsSel = document.getElementById('sel-tts');
+      const vrmSel = document.getElementById('sel-vrm');
+      localStorage.setItem('cfg_llm_model', llmSel?.value || '');
+      localStorage.setItem('cfg_asr_model', asrSel?.value || '');
+      localStorage.setItem('cfg_tts_voice', ttsSel?.value || '');
+      localStorage.setItem('cfg_voice_model', vrmSel?.value || '');
+      alert('已保存模型与声音选择');
+    });
+
+    document.getElementById('btn-reset-models')?.addEventListener('click', () => {
+      localStorage.removeItem('cfg_llm_model');
+      localStorage.removeItem('cfg_asr_model');
+      localStorage.removeItem('cfg_tts_voice');
+      localStorage.removeItem('cfg_voice_model');
+      renderModelsPanel();
+    });
   };
 
-  const optionsHTML = (arr, selected) =>
-    arr.map((v) => `<option value="${v}" ${v === selected ? 'selected' : ''}>${v}</option>`).join('');
+  // 先用本地 admin/env 渲染
+  populate(getEnvConfigOptions());
 
-  panel.innerHTML = `
-    <div class="form-section">
-      <div class="form-row">
-        <label>文本 LLM</label>
-        <select id="sel-llm" class="select">${optionsHTML(llm, state.llm)}</select>
-      </div>
-      <div class="form-row">
-        <label>ASR（语音识别）</label>
-        <select id="sel-asr" class="select">${optionsHTML(asr, state.asr)}</select>
-      </div>
-      <div class="form-row">
-        <label>TTS 声音</label>
-        <select id="sel-tts" class="select">${optionsHTML(ttsVoices, state.tts)}</select>
-      </div>
-      <div class="form-row">
-        <label>语音大模型</label>
-        <select id="sel-vrm" class="select">${optionsHTML(voiceModels, state.vrm)}</select>
-      </div>
-      <div class="form-actions">
-        <button id="btn-save-models" class="btn">保存</button>
-        <button id="btn-reset-models" class="btn btn-secondary">恢复默认</button>
-      </div>
-    </div>
-  `;
-
-  document.getElementById('btn-save-models')?.addEventListener('click', () => {
-    const llmSel = document.getElementById('sel-llm');
-    const asrSel = document.getElementById('sel-asr');
-    const ttsSel = document.getElementById('sel-tts');
-    const vrmSel = document.getElementById('sel-vrm');
-    localStorage.setItem('cfg_llm_model', llmSel?.value || '');
-    localStorage.setItem('cfg_asr_model', asrSel?.value || '');
-    localStorage.setItem('cfg_tts_voice', ttsSel?.value || '');
-    localStorage.setItem('cfg_voice_model', vrmSel?.value || '');
-    alert('已保存模型与声音选择');
-  });
-
-  document.getElementById('btn-reset-models')?.addEventListener('click', () => {
-    localStorage.removeItem('cfg_llm_model');
-    localStorage.removeItem('cfg_asr_model');
-    localStorage.removeItem('cfg_tts_voice');
-    localStorage.removeItem('cfg_voice_model');
-    renderModelsPanel();
-  });
+  // 若配置了后端接口，则尝试拉取可见列表并覆盖
+  const remoteUrl = (import.meta && import.meta.env && import.meta.env.VITE_VISIBLE_MODELS_URL) || '';
+  if (remoteUrl) {
+    fetch(remoteUrl)
+      .then((r) => r.json())
+      .then((json) => {
+        const lists = {
+          llm: json.llm || json.llms || [],
+          asr: json.asr || json.asrs || [],
+          ttsVoices: json.ttsVoices || json.tts || [],
+          voiceModels: json.voiceModels || json.vrm || []
+        };
+        if (lists.llm.length || lists.asr.length || lists.ttsVoices.length || lists.voiceModels.length) {
+          populate(lists);
+        }
+      })
+      .catch(() => {});
+  }
 }
 
 function showAddCharacterModal() {
