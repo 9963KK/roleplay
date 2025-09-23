@@ -352,20 +352,27 @@ function addMessageToUI(message) {
   if (message.type === 'ai') {
     messageDiv.innerHTML = `
       <div class="message-avatar">${avatarHTML}</div>
-      <div class="message-content">
-        <div class="message-text">${message.text}</div>
-      </div>
+      <div class="message-content"><div class="message-text"></div></div>
       <div class="message-time outside">${message.time}</div>
     `;
+    // Markdown 渲染
+    try {
+      const target = messageDiv.querySelector('.message-text');
+      if (target) {
+        target.innerHTML = renderMarkdown(message.text);
+      }
+    } catch (e) {
+      messageDiv.querySelector('.message-text').textContent = message.text;
+    }
   } else {
     // 用户消息：时间在左侧，气泡在右侧
     messageDiv.innerHTML = `
       <div class="message-time outside">${message.time}</div>
-      <div class="message-content">
-        <div class="message-text">${message.text}</div>
-      </div>
+      <div class="message-content"><div class="message-text"></div></div>
       <div class="message-avatar">${avatarHTML}</div>
     `;
+    const target = messageDiv.querySelector('.message-text');
+    target.textContent = message.text; // 用户消息不做 markdown
   }
 
   messagesContainer.appendChild(messageDiv);
@@ -475,6 +482,32 @@ function generateAIResponse(userText, character) {
 
   const characterResponses = responses[character.name] || ['这是一个很好的问题，让我为你分析一下。'];
   return characterResponses[Math.floor(Math.random() * characterResponses.length)];
+}
+
+// 简单的 Markdown 渲染器（最小可用，避免引第三方包）
+function renderMarkdown(src) {
+  if (!src) return '';
+  let html = src
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  // 粗体 **text**
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // 斜体 *text*
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // 行内代码 `code`
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // 标题 ##、###
+  html = html.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
+  // 列表 - item
+  html = html.replace(/^\-\s+(.+)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>)(\n(?!(<li>|$)))/gs, '$1');
+  if (/\<li\>/.test(html)) html = html.replace(/(?:<li>.*<\/li>\n?)+/gs, (m) => `<ul>${m}</ul>`);
+  // 段落
+  html = html.replace(/^(?!<h\d|<ul|<li|<\/li|<\/ul|<code|<pre)(.+)$/gm, '<p>$1</p>');
+  return html;
 }
 
 // 前端直连（无后端）调用演示：仅用于开发自测
