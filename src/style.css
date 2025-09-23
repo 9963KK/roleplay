@@ -242,7 +242,7 @@ body {
 /* 悬浮圆形新建按钮 */
 .fab-new-chat {
   position: absolute;
-  right: 20px;
+  left: 50%;
   bottom: 20px;
   width: 48px;
   height: 48px;
@@ -258,9 +258,10 @@ body {
   cursor: pointer;
   box-shadow: 0 10px 24px rgba(16,163,127,0.35);
   transition: transform 0.12s ease, background 0.2s ease;
+  transform: translateX(-50%);
 }
 .fab-new-chat:hover { background: #0d8a6b; }
-.fab-new-chat:active { transform: translateY(1px) scale(0.98); }
+.fab-new-chat:active { transform: translateX(-50%) translateY(1px) scale(0.98); }
 
 .history-item {
   display: flex;
