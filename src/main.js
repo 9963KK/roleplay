@@ -1,45 +1,63 @@
 import './style.css';
+import { defaultCharacters } from './shared/defaultCharacters.js';
 
-// 初始人物数据
-let characters = [
-  {
-    id: 1,
-    name: '智慧导师',
-    icon: '🧙',
-    description: '博学多才，善于解答各种问题',
-    personality: '耐心、睿智、温和',
-    createdAt: '2024-01-15',
-    lastActive: '刚刚',
-    conversationCount: 45
-  },
-  {
-    id: 2,
-    name: '创意助手',
-    icon: '🎨',
-    description: '富有想象力，擅长创意和设计',
-    personality: '活泼、创新、艺术感强',
-    createdAt: '2024-01-10',
-    lastActive: '5分钟前',
-    conversationCount: 38
-  },
-  {
-    id: 3,
-    name: '商业顾问',
-    icon: '💼',
-    description: '专业商务，擅长策略分析和市场规划',
-    personality: '理性、专业、目标导向',
-    createdAt: '2024-01-05',
-    lastActive: '1小时前',
-    conversationCount: 44
+const CHARACTER_STORAGE_KEY = 'app_characters';
+
+function cloneCharacters(list) {
+  return list.map((char) => ({ ...char }));
+}
+
+function normalizeCharacter(char, index) {
+  return {
+    id: char?.id ?? Date.now() + index,
+    name: char?.name || `角色${index + 1}`,
+    icon: char?.icon || '🧑',
+    description: char?.description || '',
+    personality: char?.personality || '',
+    background: char?.background || '',
+    responseFormat: char?.responseFormat || '',
+    createdAt: char?.createdAt || new Date().toISOString().split('T')[0],
+    lastActive: char?.lastActive || '刚刚',
+    conversationCount: char?.conversationCount || 0
+  };
+}
+
+function saveCharacters(list) {
+  try {
+    localStorage.setItem(CHARACTER_STORAGE_KEY, JSON.stringify(list));
+  } catch {
+    // ignore
   }
-];
+}
 
-let currentCharacter = characters[0];
+function loadStoredCharacters() {
+  try {
+    const raw = localStorage.getItem(CHARACTER_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || !parsed.length) return null;
+    return parsed.map((char, idx) => normalizeCharacter(char, idx));
+  } catch {
+    return null;
+  }
+}
+
+function loadCharacters() {
+  const stored = loadStoredCharacters();
+  if (stored) return stored;
+  const defaults = cloneCharacters(defaultCharacters).map((char, idx) => normalizeCharacter(char, idx));
+  saveCharacters(defaults);
+  return defaults;
+}
+
+let characters = loadCharacters();
+let currentCharacter = characters[0] || null;
 let conversations = {};
 // 历史会话归档：每个人物可有多个旧会话
 let archivedSessions = {}; // { [charId]: Array<{ id:string, messages:Message[] }> }
 let viewingArchived = null; // { charId, sessionId } 当查看归档会话时标记
 let editingCharacterId = null;
+const ADMIN_PROMPTS_KEY = 'admin_character_prompts';
 
 // 发送状态：等待大模型返回时禁止再次发送
 let isAwaitingResponse = false;
@@ -65,6 +83,7 @@ function initializeCharacters() {
 }
 
 function initializeConversations() {
+  if (!characters.length) return;
   characters.forEach((char, index) => {
     const baseTs = estimateTimestampFromLastActive(char.lastActive);
     const ts = baseTs ?? Date.now() - index * 5 * 60 * 1000;
@@ -79,6 +98,46 @@ function initializeConversations() {
     ];
     archivedSessions[char.id] = [];
   });
+}
+
+function readAdminPromptById(id) {
+  if (!id) return '';
+  try {
+    const raw = localStorage.getItem(ADMIN_PROMPTS_KEY);
+    if (!raw) return '';
+    const map = JSON.parse(raw);
+    if (map && typeof map === 'object') {
+      const entry = map[id] ?? map[Number(id)] ?? null;
+      if (!entry) return '';
+      if (typeof entry === 'string') return entry;
+      return entry?.prompt || '';
+    }
+    return '';
+  } catch {
+    return '';
+  }
+}
+
+function composeSystemPrompt(character) {
+  if (!character) return '';
+  const segments = [];
+  const adminPrompt = readAdminPromptById(character.id);
+  if (adminPrompt) segments.push(adminPrompt);
+  if (character.description) segments.push(`角色定位：\n${character.description}`);
+  if (character.personality) segments.push(`性格特征：\n${character.personality}`);
+  if (character.background) segments.push(`背景信息：\n${character.background}`);
+  if (character.responseFormat) segments.push(`回答格式要求：\n${character.responseFormat}`);
+  return segments.join('\n\n').trim();
+}
+
+function buildChatMessages(userText, character) {
+  const messages = [];
+  const systemPrompt = composeSystemPrompt(character);
+  if (systemPrompt) {
+    messages.push({ role: 'system', content: systemPrompt });
+  }
+  messages.push({ role: 'user', content: userText });
+  return messages;
 }
 
 // 像素风头像（RPG风格）
@@ -248,7 +307,7 @@ function deleteHistoryItem(charId, type, sessionId) {
     }
   } else {
     conversations[charId] = [];
-    if (!viewingArchived && currentCharacter.id === charId) {
+    if (!viewingArchived && currentCharacter && currentCharacter.id === charId) {
       const messagesContainer = document.getElementById('chatMessages');
       if (messagesContainer) messagesContainer.innerHTML = '';
     }
@@ -265,9 +324,10 @@ function renderCharacterDropdown() {
   if (!dropdown) return;
   dropdown.innerHTML = '';
 
+  const activeId = currentCharacter?.id;
   characters.forEach((char) => {
     const item = document.createElement('div');
-    item.className = `model-item ${char.id === currentCharacter.id ? 'active' : ''}`;
+    item.className = `model-item ${activeId && char.id === activeId ? 'active' : ''}`;
     item.innerHTML = `
       <div class=\"avatar\">${getPixelAvatarByName(char.name)}</div>
       <div class=\"name\">${char.name}</div>
@@ -315,7 +375,8 @@ function renderCharacterList() {
 
   characters.forEach((char) => {
     const item = document.createElement('div');
-    item.className = `character-item ${char.id === currentCharacter.id ? 'active' : ''}`;
+    const isActive = currentCharacter && char.id === currentCharacter.id;
+    item.className = `character-item ${isActive ? 'active' : ''}`;
     item.onclick = () => selectCharacter(char.id);
 
     item.innerHTML = `
@@ -348,6 +409,8 @@ function renderCharacterManagement() {
         <h3>${char.name}</h3>
         <p>描述：${char.description}</p>
         <p>性格：${char.personality}</p>
+        ${char.background ? `<p>背景：${char.background}</p>` : ''}
+        ${char.responseFormat ? `<p>回答格式：${char.responseFormat}</p>` : ''}
         <div class="meta">创建时间：${char.createdAt}</div>
       </div>
       <div class="character-actions">
@@ -432,6 +495,7 @@ function addMessageToUI(message) {
 }
 
 function sendMessage() {
+  if (!currentCharacter) return;
   if (isAwaitingResponse) return; // 正在等待回复时禁止发送
   const input = document.getElementById('messageInput');
   if (!input) return;
@@ -448,6 +512,7 @@ function sendMessage() {
 
   // 若正在查看历史会话，则跳回当前会话
   viewingArchived = null;
+  conversations[currentCharacter.id] = conversations[currentCharacter.id] || [];
   conversations[currentCharacter.id].push(userMessage);
   addMessageToUI(userMessage);
   input.value = '';
@@ -485,6 +550,8 @@ function sendMessage() {
       setSendingState(false);
     };
 
+    const chatMessagesPayload = buildChatMessages(text, currentCharacter);
+
     if (localStorage.getItem('dev_enabled') === 'true') {
       loadAppConfig().then(() => {
         // 将 admin 保存的 base 覆盖到 appConfig.dev
@@ -495,7 +562,7 @@ function sendMessage() {
         // 流式输出
         let acc = '';
         callTextLLMDevStream(
-          text,
+          chatMessagesPayload,
           (delta) => {
             acc += delta;
             const contentBox = typingDiv.querySelector('.message-content');
@@ -516,7 +583,7 @@ function sendMessage() {
       const aiTs = Date.now();
       writeAI(generateAIResponse(text, currentCharacter));
     }
-    
+
   }, 1000);
 }
 
@@ -599,7 +666,7 @@ function renderMarkdown(src) {
 }
 
 // 前端直连（无后端）调用演示：仅用于开发自测
-async function callTextLLMDev(prompt) {
+async function callTextLLMDev(messages) {
   if (!appConfig?.dev?.enabled) {
     console.warn('dev 直连未启用');
     return '（本地直连未启用）';
@@ -608,6 +675,7 @@ async function callTextLLMDev(prompt) {
   const key = localStorage.getItem('dev_api_key') || '';
   const model = localStorage.getItem('cfg_llm_model') || (appConfig.defaults?.llm?.[0] || '');
   if (!base || !key || !model) return '（请在 Admin 页或本地存储中配置 dev_api_key/模型）';
+  const payloadMessages = Array.isArray(messages) && messages.length ? messages : [{ role: 'user', content: typeof messages === 'string' ? messages : '' }];
 
   try {
     const res = await fetch(`${base}/chat/completions`, {
@@ -616,7 +684,7 @@ async function callTextLLMDev(prompt) {
         'Content-Type': 'application/json',
         [appConfig.dev.authHeader || 'Authorization']: `${appConfig.dev.authScheme || 'Bearer'} ${key}`
       },
-      body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }] })
+      body: JSON.stringify({ model, messages: payloadMessages })
     });
     const data = await res.json();
     const text = data?.choices?.[0]?.message?.content || JSON.stringify(data);
@@ -627,7 +695,7 @@ async function callTextLLMDev(prompt) {
 }
 
 // 流式（SSE）输出
-async function callTextLLMDevStream(prompt, onDelta, onDone, onError) {
+async function callTextLLMDevStream(messages, onDelta, onDone, onError) {
   const controller = new AbortController();
   const INACTIVITY_TIMEOUT_MS = 20000; // 20s 无增量则视为卡住
   const HARD_TIMEOUT_MS = 120000; // 2 分钟硬超时
@@ -649,6 +717,7 @@ async function callTextLLMDevStream(prompt, onDelta, onDone, onError) {
     const base = localStorage.getItem('dev_llm_base') || appConfig?.dev?.llmBase;
     const key = localStorage.getItem('dev_api_key') || '';
     const model = localStorage.getItem('cfg_llm_model') || (appConfig.defaults?.llm?.[0] || '');
+    const payloadMessages = Array.isArray(messages) && messages.length ? messages : [{ role: 'user', content: typeof messages === 'string' ? messages : '' }];
     if (!base || !key || !model) throw new Error('缺少 base/key/model');
 
     const authHeaderName = (appConfig?.dev?.authHeader) || 'Authorization';
@@ -664,7 +733,7 @@ async function callTextLLMDevStream(prompt, onDelta, onDone, onError) {
         Accept: 'text/event-stream',
         [authHeaderName]: `${authScheme} ${key}`
       },
-      body: JSON.stringify({ model, stream: true, messages: [{ role: 'user', content: prompt }] }),
+      body: JSON.stringify({ model, stream: true, messages: payloadMessages }),
       signal: controller.signal
     });
     if (!res.ok) {
@@ -950,6 +1019,8 @@ function editCharacter(characterId) {
   document.getElementById('characterIcon').value = character.icon;
   document.getElementById('characterDesc').value = character.description;
   document.getElementById('characterPersonality').value = character.personality;
+  document.getElementById('characterBackground').value = character.background || '';
+  document.getElementById('characterFormat').value = character.responseFormat || '';
   document.getElementById('characterModal').style.display = 'block';
 }
 
@@ -959,18 +1030,31 @@ function deleteCharacter(characterId) {
   characters = characters.filter((char) => char.id !== characterId);
   delete conversations[characterId];
 
-  if (currentCharacter.id === characterId && characters.length > 0) {
+  if (currentCharacter && currentCharacter.id === characterId && characters.length > 0) {
     currentCharacter = characters[0];
+  } else if (!characters.length) {
+    currentCharacter = null;
   }
+
+  saveCharacters(characters);
 
   renderCharacterList();
   renderCharacterManagement();
   updateStats();
 
-  if (characters.length > 0) {
+  if (characters.length > 0 && currentCharacter) {
     loadConversation(currentCharacter.id);
-    document.getElementById('currentCharacterAvatar').textContent = currentCharacter.icon;
-    document.getElementById('currentCharacterName').textContent = currentCharacter.name;
+    const avatarNode = document.getElementById('currentCharacterAvatar');
+    if (avatarNode) avatarNode.innerHTML = getPixelAvatarByName(currentCharacter.name);
+    const nameNode = document.getElementById('currentCharacterName');
+    if (nameNode) nameNode.textContent = currentCharacter.name;
+  } else {
+    const avatarNode = document.getElementById('currentCharacterAvatar');
+    if (avatarNode) avatarNode.textContent = '';
+    const nameNode = document.getElementById('currentCharacterName');
+    if (nameNode) nameNode.textContent = '';
+    const messagesContainer = document.getElementById('chatMessages');
+    if (messagesContainer) messagesContainer.innerHTML = '';
   }
 }
 
@@ -1000,10 +1084,12 @@ function updateStats() {
 }
 
 function bumpCurrentCharacterActivity() {
+  if (!currentCharacter) return;
   const character = characters.find((c) => c.id === currentCharacter.id);
   if (character) {
     character.lastActive = '刚刚';
     character.conversationCount = (character.conversationCount || 0) + 1;
+    saveCharacters(characters);
   }
   renderHistoryList();
   renderCharacterManagement();
@@ -1028,12 +1114,14 @@ document.addEventListener('DOMContentLoaded', () => {
   renderHistoryList();
   renderCharacterDropdown();
   renderCharacterManagement();
-  loadConversation(currentCharacter.id);
-  // 初始化头部头像与名称，避免默认字体为0导致看不到字符
-  const initAvatar = document.getElementById('currentCharacterAvatar');
-  if (initAvatar) initAvatar.innerHTML = getPixelAvatarByName(currentCharacter.name);
-  const initName = document.getElementById('currentCharacterName');
-  if (initName) initName.textContent = currentCharacter.name;
+  if (currentCharacter) {
+    loadConversation(currentCharacter.id);
+    // 初始化头部头像与名称，避免默认字体为0导致看不到字符
+    const initAvatar = document.getElementById('currentCharacterAvatar');
+    if (initAvatar) initAvatar.innerHTML = getPixelAvatarByName(currentCharacter.name);
+    const initName = document.getElementById('currentCharacterName');
+    if (initName) initName.textContent = currentCharacter.name;
+  }
   updateStats();
 
   // 设置页默认显示人物设置
@@ -1098,7 +1186,9 @@ document.addEventListener('DOMContentLoaded', () => {
       name: document.getElementById('characterName').value,
       icon: document.getElementById('characterIcon').value,
       description: document.getElementById('characterDesc').value,
-      personality: document.getElementById('characterPersonality').value
+      personality: document.getElementById('characterPersonality').value,
+      background: document.getElementById('characterBackground').value,
+      responseFormat: document.getElementById('characterFormat').value
     };
 
     if (editingCharacterId) {
@@ -1116,13 +1206,25 @@ document.addEventListener('DOMContentLoaded', () => {
       };
       characters.push(newCharacter);
       conversations[newCharacter.id] = [];
+      currentCharacter = newCharacter;
+      editingCharacterId = null;
     }
+
+    saveCharacters(characters);
 
     renderCharacterList();
     renderHistoryList();
     renderCharacterManagement();
+    if (currentCharacter) {
+      loadConversation(currentCharacter.id);
+      const avatarNode = document.getElementById('currentCharacterAvatar');
+      if (avatarNode) avatarNode.innerHTML = getPixelAvatarByName(currentCharacter.name);
+      const nameNode = document.getElementById('currentCharacterName');
+      if (nameNode) nameNode.textContent = currentCharacter.name;
+    }
     updateStats();
     closeCharacterModal();
+    editingCharacterId = null;
   });
   });
 });
@@ -1146,6 +1248,7 @@ window.setTheme = (theme) => {
 
 // 新建对话：为当前人物创建一条空会话并切换到该人物
 window.newConversation = () => {
+  if (!currentCharacter) return;
   const cid = currentCharacter.id;
   // 若当前是历史会话视图，则回到“当前会话”再新建
   if (viewingArchived && viewingArchived.charId === cid) viewingArchived = null;
