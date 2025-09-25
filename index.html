@@ -80,6 +80,13 @@
                     <button class="action-btn" title="语音通话" onclick="startVoiceCall()">
                       <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.86 19.86 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.86 19.86 0 0 1 2.08 4.18 2 2 0 0 1 4.06 2h3a2 2 0 0 1 2 1.72c.12.9.37 1.77.72 2.58a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.5-1.2a2 2 0 0 1 2.11-.45c.81.35 1.68.6 2.58.72A2 2 0 0 1 22 16.92z"/></svg>
                     </button>
+                    <button class="action-btn" title="语音输入" onclick="startVoiceInput()">
+                      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 19v3" />
+                        <path d="M8 7a4 4 0 0 1 8 0v4a4 4 0 0 1-8 0V7z" />
+                        <path d="M5 11v1a7 7 0 0 0 14 0v-1" />
+                      </svg>
+                    </button>
                   </div>
                   <button class="send-btn" onclick="sendMessage()">➤</button>
                 </div>
@@ -162,34 +169,73 @@
         </div>
 
         <form id="characterForm">
-          <div class="form-group">
-            <label for="characterName">人物名称</label>
-            <input type="text" id="characterName" required />
-          </div>
+          <div class="form-section-grid">
+            <div class="form-column">
+              <div class="form-card">
+                <h4>基础信息</h4>
+                <div class="form-group">
+                  <label for="characterName">人物名称</label>
+                  <input type="text" id="characterName" required />
+                </div>
+                <div class="form-group">
+                  <label for="characterDesc">人物描述</label>
+                  <textarea id="characterDesc" placeholder="描述这个人物的特点和功能" required></textarea>
+                </div>
+              </div>
 
-          <div class="form-group">
-            <label for="characterIcon">人物图标</label>
-            <input type="text" id="characterIcon" placeholder="例如：🧙, 🎨, 💼" required />
-          </div>
+              <div class="form-card">
+                <h4>性格与开场</h4>
+                <div class="form-group">
+                  <label for="characterPersonality">性格特点</label>
+                  <textarea id="characterPersonality" placeholder="描述这个人物的性格特征" required></textarea>
+                </div>
+                <div class="form-group">
+                  <label for="characterOpening">开场发言</label>
+                  <textarea id="characterOpening" placeholder="用户开始对话时人物的问候语"></textarea>
+                </div>
+              </div>
+            </div>
 
-          <div class="form-group">
-            <label for="characterDesc">人物描述</label>
-            <textarea id="characterDesc" placeholder="描述这个人物的特点和功能" required></textarea>
-          </div>
+            <div class="form-column">
+              <div class="form-card">
+                <h4>人物头像</h4>
+                <div class="form-group form-group--tight">
+                  <div class="avatar-input-panel" id="avatarInputPanel">
+                    <div class="avatar-preview" id="avatarPreview" aria-label="头像预览"></div>
+                    <div class="avatar-mode-switch" role="tablist">
+                      <button type="button" class="avatar-mode-btn active" data-avatar-mode="emoji">Emoji</button>
+                      <button type="button" class="avatar-mode-btn" data-avatar-mode="url">图片链接</button>
+                      <button type="button" class="avatar-mode-btn" data-avatar-mode="upload">上传图片</button>
+                    </div>
+                    <div class="avatar-input-field" data-avatar-field="emoji">
+                      <input type="text" id="characterEmoji" placeholder="例如：🧙" maxlength="4" />
+                    </div>
+                    <div class="avatar-input-field hidden" data-avatar-field="url">
+                      <input type="url" id="characterAvatarUrl" placeholder="https://example.com/avatar.png" />
+                    </div>
+                    <div class="avatar-input-field hidden" data-avatar-field="upload">
+                      <label class="avatar-upload-btn">
+                        <input type="file" id="characterAvatarFile" accept="image/*" hidden />
+                        <span>选择图片</span>
+                      </label>
+                      <div class="avatar-upload-hint">支持 PNG/JPG/GIF，建议大小不超过 1MB。</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-          <div class="form-group">
-            <label for="characterPersonality">性格特点</label>
-            <textarea id="characterPersonality" placeholder="描述这个人物的性格特征" required></textarea>
-          </div>
-
-          <div class="form-group">
-            <label for="characterBackground">背景信息</label>
-            <textarea id="characterBackground" placeholder="补充角色的世界观、职责或限制"></textarea>
-          </div>
-
-          <div class="form-group">
-            <label for="characterFormat">回答格式</label>
-            <textarea id="characterFormat" placeholder="指定输出结构，例如：列表、Markdown 模板、JSON"></textarea>
+              <div class="form-card">
+                <h4>背景与格式</h4>
+                <div class="form-group">
+                  <label for="characterBackground">背景信息</label>
+                  <textarea id="characterBackground" placeholder="补充角色的世界观、职责或限制"></textarea>
+                </div>
+                <div class="form-group">
+                  <label for="characterFormat">回答格式</label>
+                  <textarea id="characterFormat" placeholder="指定输出结构，例如：列表、Markdown 模板、JSON"></textarea>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="form-actions">

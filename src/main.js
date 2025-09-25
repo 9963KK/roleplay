@@ -8,14 +8,22 @@ function cloneCharacters(list) {
 }
 
 function normalizeCharacter(char, index) {
+  const avatarType = char?.avatarType
+    || (char?.avatarUrl ? 'url'
+      : (char?.icon ? 'emoji' : 'pixel'));
+  const avatarUrl = char?.avatarUrl || '';
+  const iconValue = typeof char?.icon === 'string' ? char.icon : '';
   return {
     id: char?.id ?? Date.now() + index,
     name: char?.name || `角色${index + 1}`,
-    icon: char?.icon || '🧑',
+    icon: iconValue || '🧑',
     description: char?.description || '',
     personality: char?.personality || '',
     background: char?.background || '',
     responseFormat: char?.responseFormat || '',
+    openingMessage: char?.openingMessage || '',
+    avatarType,
+    avatarUrl,
     createdAt: char?.createdAt || new Date().toISOString().split('T')[0],
     lastActive: char?.lastActive || '刚刚',
     conversationCount: char?.conversationCount || 0
@@ -58,6 +66,43 @@ let archivedSessions = {}; // { [charId]: Array<{ id:string, messages:Message[] 
 let viewingArchived = null; // { charId, sessionId } 当查看归档会话时标记
 let editingCharacterId = null;
 const ADMIN_PROMPTS_KEY = 'admin_character_prompts';
+let avatarFormState = {
+  mode: 'emoji',
+  emoji: '',
+  url: '',
+  uploadData: '',
+  uploadName: '',
+  baseCharacter: null
+};
+
+function escapeHtml(str = '') {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function escapeAttribute(str = '') {
+  return escapeHtml(str).replace(/\"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function getCharacterAvatarMarkup(char, size = 40) {
+  const safeSize = Number.isFinite(size) ? Math.max(24, size) : 40;
+  const dimensionStyle = `style="width:${safeSize}px;height:${safeSize}px;"`;
+  if (!char) {
+    return `<div class="avatar-chip" ${dimensionStyle}><span class="avatar-emoji" style="font-size:${Math.round(safeSize * 0.6)}px;">🖼️</span></div>`;
+  }
+  const type = char.avatarType;
+  const urlValue = char.avatarUrl;
+  if ((type === 'url' || type === 'upload') && urlValue) {
+    return `<div class="avatar-chip" ${dimensionStyle}><img src="${escapeAttribute(urlValue)}" alt="${escapeAttribute(char.name || 'avatar')}" /></div>`;
+  }
+  if ((type === 'emoji' || (!type && char.icon)) && char.icon) {
+    return `<div class="avatar-chip" ${dimensionStyle}><span class="avatar-emoji" style="font-size:${Math.round(safeSize * 0.6)}px;">${escapeHtml(char.icon)}</span></div>`;
+  }
+  const pixel = getPixelAvatarByName(char.name || '');
+  return `<div class="avatar-chip avatar-pixel-wrapper" ${dimensionStyle}>${pixel}</div>`;
+}
 
 // 发送状态：等待大模型返回时禁止再次发送
 let isAwaitingResponse = false;
@@ -82,20 +127,24 @@ function initializeCharacters() {
   // 预留接口：未来可从后端或本地存储同步人物数据
 }
 
+function createOpeningMessage(character, timestamp = Date.now()) {
+  const openingText = (character?.openingMessage && character.openingMessage.trim())
+    || `你好！我是${character?.name || '伙伴'}，很高兴与你交流。`;
+  return {
+    type: 'ai',
+    author: character?.name || 'AI',
+    text: openingText,
+    time: formatClock(timestamp),
+    timestamp
+  };
+}
+
 function initializeConversations() {
   if (!characters.length) return;
   characters.forEach((char, index) => {
     const baseTs = estimateTimestampFromLastActive(char.lastActive);
     const ts = baseTs ?? Date.now() - index * 5 * 60 * 1000;
-    conversations[char.id] = [
-      {
-        type: 'ai',
-        author: char.name,
-        text: `你好！我是${char.name}，很高兴与你交流。`,
-        time: formatClock(ts),
-        timestamp: ts
-      }
-    ];
+    conversations[char.id] = [createOpeningMessage(char, ts)];
     archivedSessions[char.id] = [];
   });
 }
@@ -138,6 +187,206 @@ function buildChatMessages(userText, character) {
   }
   messages.push({ role: 'user', content: userText });
   return messages;
+}
+
+function refreshUploadHint() {
+  const hintEl = document.querySelector('.avatar-upload-hint');
+  if (!hintEl) return;
+  if (!hintEl.dataset.defaultHint) hintEl.dataset.defaultHint = hintEl.textContent;
+  const labelText = avatarFormState.uploadData && avatarFormState.uploadName
+    ? `已选择：${avatarFormState.uploadName}`
+    : hintEl.dataset.defaultHint;
+  hintEl.textContent = labelText;
+  const labelBtn = document.querySelector('.avatar-upload-btn span');
+  if (labelBtn) {
+    labelBtn.textContent = avatarFormState.uploadData ? '重新选择图片' : '选择图片';
+  }
+}
+
+function avatarStateToDisplay() {
+  if (avatarFormState.mode === 'emoji' && avatarFormState.emoji.trim()) {
+    return { type: 'emoji', value: avatarFormState.emoji.trim() };
+  }
+  if (avatarFormState.mode === 'url' && avatarFormState.url.trim()) {
+    return { type: 'image', value: avatarFormState.url.trim() };
+  }
+  if (avatarFormState.mode === 'upload' && avatarFormState.uploadData) {
+    return { type: 'image', value: avatarFormState.uploadData };
+  }
+  const base = avatarFormState.baseCharacter;
+  if (base) {
+    if ((base.avatarType === 'url' || base.avatarType === 'upload') && base.avatarUrl) {
+      return { type: 'image', value: base.avatarUrl };
+    }
+    if (base.avatarType === 'emoji' && base.icon) {
+      return { type: 'emoji', value: base.icon };
+    }
+  }
+  return { type: 'placeholder', value: '🖼️' };
+}
+
+function updateAvatarPreview() {
+  const preview = document.getElementById('avatarPreview');
+  if (!preview) return;
+  const display = avatarStateToDisplay();
+  if (display.type === 'image') {
+    preview.innerHTML = `<div class="avatar-img-wrapper"><img src="${escapeAttribute(display.value)}" alt="头像预览" /></div>`;
+  } else if (display.type === 'emoji') {
+    preview.innerHTML = `<span class="avatar-emoji">${escapeHtml(display.value)}</span>`;
+  } else {
+    preview.innerHTML = `<span class="placeholder">${escapeHtml(display.value)}</span>`;
+  }
+  refreshUploadHint();
+}
+
+function switchAvatarMode(mode, focus = true) {
+  avatarFormState.mode = mode;
+  document.querySelectorAll('.avatar-mode-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.avatarMode === mode);
+  });
+  document.querySelectorAll('.avatar-input-field').forEach((field) => {
+    const fieldMode = field.getAttribute('data-avatar-field');
+    const isActive = fieldMode === mode;
+    field.classList.toggle('hidden', !isActive);
+    if (isActive && focus) {
+      const input = field.querySelector('input:not([type="file"])');
+      input?.focus();
+    }
+  });
+  updateAvatarPreview();
+}
+
+function handleAvatarFileChange(event) {
+  const file = event.target?.files?.[0];
+  if (!file) {
+    avatarFormState.uploadData = '';
+    avatarFormState.uploadName = '';
+    updateAvatarPreview();
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    avatarFormState.uploadData = e.target?.result || '';
+    avatarFormState.uploadName = file.name || '';
+    switchAvatarMode('upload', false);
+    updateAvatarPreview();
+  };
+  reader.readAsDataURL(file);
+}
+
+function prepareAvatarControls(character) {
+  avatarFormState = {
+    mode: 'emoji',
+    emoji: '',
+    url: '',
+    uploadData: '',
+    uploadName: '',
+    baseCharacter: character || null
+  };
+  if (character) {
+    if (character.avatarType === 'url') {
+      avatarFormState.mode = 'url';
+      avatarFormState.url = character.avatarUrl || '';
+    } else if (character.avatarType === 'upload') {
+      avatarFormState.mode = 'upload';
+      avatarFormState.uploadData = character.avatarUrl || '';
+      avatarFormState.uploadName = character.avatarUrl ? '已保存图片' : '';
+    } else if (character.avatarType === 'emoji') {
+      avatarFormState.mode = 'emoji';
+      avatarFormState.emoji = character.icon || '';
+    } else if (character.icon) {
+      avatarFormState.mode = 'emoji';
+      avatarFormState.emoji = character.icon;
+    }
+  }
+  const emojiInput = document.getElementById('characterEmoji');
+  if (emojiInput) emojiInput.value = avatarFormState.emoji || '';
+  const urlInput = document.getElementById('characterAvatarUrl');
+  if (urlInput) urlInput.value = avatarFormState.url || '';
+  const fileInput = document.getElementById('characterAvatarFile');
+  if (fileInput) fileInput.value = '';
+  switchAvatarMode(avatarFormState.mode, false);
+  updateAvatarPreview();
+}
+
+function getAvatarFormResult() {
+  const emojiValue = avatarFormState.emoji?.trim();
+  const urlValue = avatarFormState.url?.trim();
+  if (avatarFormState.mode === 'emoji' && emojiValue) {
+    return { avatarType: 'emoji', avatarUrl: '', icon: emojiValue };
+  }
+  if (avatarFormState.mode === 'url' && urlValue) {
+    return { avatarType: 'url', avatarUrl: urlValue, icon: '' };
+  }
+  if (avatarFormState.mode === 'upload' && avatarFormState.uploadData) {
+    return { avatarType: 'upload', avatarUrl: avatarFormState.uploadData, icon: '' };
+  }
+  const base = avatarFormState.baseCharacter;
+  if (base) {
+    return {
+      avatarType: base.avatarType || 'emoji',
+      avatarUrl: base.avatarUrl || '',
+      icon: base.icon || ''
+    };
+  }
+  return { avatarType: 'emoji', avatarUrl: '', icon: emojiValue || '🙂' };
+}
+
+function parseReasoningSections(text) {
+  if (!text) return null;
+  const lines = text.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+  if (lines.length < 4) return null;
+  const headingPattern = /^([A-Za-z\u4e00-\u9fa5]{1,16})(?:[:：])?$/;
+  const sections = [];
+  let current = null;
+  lines.forEach((line) => {
+    const isHeading = headingPattern.test(line) && line.length <= 10;
+    if (isHeading) {
+      if (current) sections.push(current);
+      current = { title: line.replace(/[:：]$/, ''), body: [] };
+    } else {
+      if (!current) {
+        current = { title: '思考', body: [] };
+      }
+      current.body.push(line);
+    }
+  });
+  if (current) sections.push(current);
+  if (sections.length < 2) return null;
+  return sections;
+}
+
+function renderReasoningHTML(text) {
+  const sections = parseReasoningSections(text);
+  if (!sections) return null;
+  const iconMap = {
+    背景: '🗺️',
+    角色: '🧍',
+    思考: '🧠',
+    分析: '🔍',
+    计划: '🗒️',
+    策略: '🧭',
+    行动建议: '✅',
+    建议: '✅',
+    结果: '📌',
+    总结: '📘'
+  };
+const fallbackIcons = ['🧠', '🔍', '✅', '💡', '🗺️'];
+let fallbackIndex = 0;
+  const sectionsHTML = sections
+    .map((section) => {
+      const icon = iconMap[section.title] || fallbackIcons[fallbackIndex++ % fallbackIcons.length];
+      const bodyMarkdown = section.body.join('\n');
+      const bodyHTML = renderMarkdown(bodyMarkdown);
+      return `
+        <div class="reasoning-section">
+          <div class="reasoning-title"><span class="reasoning-icon">${icon}</span><span>${escapeHtml(section.title)}</span></div>
+          <div class="reasoning-body">${bodyHTML}</div>
+        </div>
+      `;
+    })
+    .join('');
+  return `<div class="reasoning-bubble">${sectionsHTML}</div>`;
 }
 
 // 像素风头像（RPG风格）
@@ -328,9 +577,10 @@ function renderCharacterDropdown() {
   characters.forEach((char) => {
     const item = document.createElement('div');
     item.className = `model-item ${activeId && char.id === activeId ? 'active' : ''}`;
+    const avatarMarkup = getCharacterAvatarMarkup(char, 36);
     item.innerHTML = `
-      <div class=\"avatar\">${getPixelAvatarByName(char.name)}</div>
-      <div class=\"name\">${char.name}</div>
+      <div class=\"avatar\">${avatarMarkup}</div>
+      <div class=\"name\">${escapeHtml(char.name)}</div>
     `;
     item.onclick = () => {
       selectCharacter(char.id);
@@ -379,14 +629,15 @@ function renderCharacterList() {
     item.className = `character-item ${isActive ? 'active' : ''}`;
     item.onclick = () => selectCharacter(char.id);
 
+    const avatarMarkup = getCharacterAvatarMarkup(char);
     item.innerHTML = `
       <div class="character-header">
-        <div class="character-avatar">${getPixelAvatarByName(char.name)}</div>
-        <div class="character-name">${char.name}</div>
+        <div class="character-avatar">${avatarMarkup}</div>
+        <div class="character-name">${escapeHtml(char.name)}</div>
       </div>
-      <div class="character-desc">${char.description}</div>
+      <div class="character-desc">${escapeHtml(char.description)}</div>
       <div style="font-size: 10px; color: #8b4513; margin-top: 5px;">
-        最后对话：${char.lastActive}
+        最后对话：${escapeHtml(char.lastActive)}
       </div>
     `;
 
@@ -403,15 +654,16 @@ function renderCharacterManagement() {
     const card = document.createElement('div');
     card.className = 'character-card';
 
+    const avatarMarkup = getCharacterAvatarMarkup(char, 60);
     card.innerHTML = `
-      <div class="character-avatar" style="width: 60px; height: 60px; font-size: 30px;">${char.icon}</div>
+      <div class="character-avatar" style="width: 60px; height: 60px;">${avatarMarkup}</div>
       <div class="character-card-info">
-        <h3>${char.name}</h3>
-        <p>描述：${char.description}</p>
-        <p>性格：${char.personality}</p>
-        ${char.background ? `<p>背景：${char.background}</p>` : ''}
-        ${char.responseFormat ? `<p>回答格式：${char.responseFormat}</p>` : ''}
-        <div class="meta">创建时间：${char.createdAt}</div>
+        <h3>${escapeHtml(char.name)}</h3>
+        <p>描述：${escapeHtml(char.description)}</p>
+        <p>性格：${escapeHtml(char.personality)}</p>
+        ${char.background ? `<p>背景：${escapeHtml(char.background)}</p>` : ''}
+        ${char.responseFormat ? `<p>回答格式：${escapeHtml(char.responseFormat)}</p>` : ''}
+        <div class="meta">创建时间：${escapeHtml(char.createdAt)}</div>
       </div>
       <div class="character-actions">
         <button class="btn btn-small btn-edit" onclick="editCharacter(${char.id})">编辑</button>
@@ -423,6 +675,18 @@ function renderCharacterManagement() {
   });
 }
 
+function updateCurrentCharacterHeader() {
+  const avatarEl = document.getElementById('currentCharacterAvatar');
+  const nameEl = document.getElementById('currentCharacterName');
+  if (!currentCharacter) {
+    if (avatarEl) avatarEl.innerHTML = getCharacterAvatarMarkup(null, 48);
+    if (nameEl) nameEl.textContent = '';
+    return;
+  }
+  if (avatarEl) avatarEl.innerHTML = getCharacterAvatarMarkup(currentCharacter, 48);
+  if (nameEl) nameEl.textContent = currentCharacter.name;
+}
+
 function selectCharacter(characterId) {
   const nextCharacter = characters.find((char) => char.id === characterId);
   if (!nextCharacter) return;
@@ -430,11 +694,7 @@ function selectCharacter(characterId) {
   renderCharacterList();
   renderCharacterDropdown();
   loadConversation(characterId);
-
-  const avatar = document.getElementById('currentCharacterAvatar');
-  const name = document.getElementById('currentCharacterName');
-  if (avatar) avatar.innerHTML = getPixelAvatarByName(currentCharacter.name);
-  if (name) name.textContent = currentCharacter.name;
+  updateCurrentCharacterHeader();
 }
 
 function loadConversation(characterId) {
@@ -456,7 +716,9 @@ function addMessageToUI(message) {
   const messageDiv = document.createElement('div');
   messageDiv.className = `message ${message.type}`;
 
-  const avatarHTML = message.type === 'ai' ? getPixelAvatarByName(currentCharacter.name) : pixelUserSVG();
+  const avatarHTML = message.type === 'ai'
+    ? getCharacterAvatarMarkup(currentCharacter, 36)
+    : `<div class="avatar-chip" style="width:36px;height:36px;">${pixelUserSVG()}</div>`;
 
   // 连续消息合并：如果上一条是同一侧，则标记为连续
   const last = messagesContainer.lastElementChild;
@@ -475,7 +737,13 @@ function addMessageToUI(message) {
     try {
       const target = messageDiv.querySelector('.message-text');
       if (target) {
-        target.innerHTML = renderMarkdown(message.text);
+        const reasoning = renderReasoningHTML(message.text);
+        if (reasoning) {
+          messageDiv.classList.add('ai-reasoning');
+          target.innerHTML = reasoning;
+        } else {
+          target.innerHTML = renderMarkdown(message.text);
+        }
       }
     } catch (e) {
       messageDiv.querySelector('.message-text').textContent = message.text;
@@ -525,7 +793,7 @@ function sendMessage() {
   const typingDiv = document.createElement('div');
   typingDiv.className = 'message ai typing';
   typingDiv.innerHTML = `
-    <div class="message-avatar">${getPixelAvatarByName(currentCharacter.name)}</div>
+    <div class="message-avatar">${getCharacterAvatarMarkup(currentCharacter, 36)}</div>
     <div class="message-content"><div class="typing-dots"><span></span><span></span><span></span></div></div>
   `;
   messagesContainer.appendChild(typingDiv);
@@ -1006,6 +1274,7 @@ function showAddCharacterModal() {
   modalTitle.textContent = '添加新人物';
   const form = document.getElementById('characterForm');
   form.reset();
+  prepareAvatarControls(null);
   document.getElementById('characterModal').style.display = 'block';
 }
 
@@ -1016,11 +1285,12 @@ function editCharacter(characterId) {
   editingCharacterId = characterId;
   document.getElementById('modalTitle').textContent = '编辑人物';
   document.getElementById('characterName').value = character.name;
-  document.getElementById('characterIcon').value = character.icon;
   document.getElementById('characterDesc').value = character.description;
   document.getElementById('characterPersonality').value = character.personality;
   document.getElementById('characterBackground').value = character.background || '';
   document.getElementById('characterFormat').value = character.responseFormat || '';
+  document.getElementById('characterOpening').value = character.openingMessage || '';
+  prepareAvatarControls(character);
   document.getElementById('characterModal').style.display = 'block';
 }
 
@@ -1044,15 +1314,9 @@ function deleteCharacter(characterId) {
 
   if (characters.length > 0 && currentCharacter) {
     loadConversation(currentCharacter.id);
-    const avatarNode = document.getElementById('currentCharacterAvatar');
-    if (avatarNode) avatarNode.innerHTML = getPixelAvatarByName(currentCharacter.name);
-    const nameNode = document.getElementById('currentCharacterName');
-    if (nameNode) nameNode.textContent = currentCharacter.name;
+    updateCurrentCharacterHeader();
   } else {
-    const avatarNode = document.getElementById('currentCharacterAvatar');
-    if (avatarNode) avatarNode.textContent = '';
-    const nameNode = document.getElementById('currentCharacterName');
-    if (nameNode) nameNode.textContent = '';
+    updateCurrentCharacterHeader();
     const messagesContainer = document.getElementById('chatMessages');
     if (messagesContainer) messagesContainer.innerHTML = '';
   }
@@ -1105,6 +1369,10 @@ function startVoiceCall() {
   alert('语音通话功能开发中...');
 }
 
+function startVoiceInput() {
+  alert('语音输入功能开发中...');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   // 先加载运行时配置，再初始化应用（避免读取为空）
   loadAppConfig().then(() => {
@@ -1116,12 +1384,8 @@ document.addEventListener('DOMContentLoaded', () => {
   renderCharacterManagement();
   if (currentCharacter) {
     loadConversation(currentCharacter.id);
-    // 初始化头部头像与名称，避免默认字体为0导致看不到字符
-    const initAvatar = document.getElementById('currentCharacterAvatar');
-    if (initAvatar) initAvatar.innerHTML = getPixelAvatarByName(currentCharacter.name);
-    const initName = document.getElementById('currentCharacterName');
-    if (initName) initName.textContent = currentCharacter.name;
   }
+  updateCurrentCharacterHeader();
   updateStats();
 
   // 设置页默认显示人物设置
@@ -1135,6 +1399,28 @@ document.addEventListener('DOMContentLoaded', () => {
   searchInput?.addEventListener('input', () => {
     renderHistoryList();
   });
+
+  document.querySelectorAll('.avatar-mode-btn')?.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const mode = btn.getAttribute('data-avatar-mode');
+      if (mode) switchAvatarMode(mode);
+    });
+  });
+
+  const emojiInput = document.getElementById('characterEmoji');
+  emojiInput?.addEventListener('input', (event) => {
+    avatarFormState.emoji = event.target.value;
+    updateAvatarPreview();
+  });
+
+  const urlInput = document.getElementById('characterAvatarUrl');
+  urlInput?.addEventListener('input', (event) => {
+    avatarFormState.url = event.target.value;
+    updateAvatarPreview();
+  });
+
+  const fileInput = document.getElementById('characterAvatarFile');
+  fileInput?.addEventListener('change', handleAvatarFileChange);
 
   // 固定浅色主题
   document.body.setAttribute('data-theme', 'light');
@@ -1184,17 +1470,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const formData = {
       name: document.getElementById('characterName').value,
-      icon: document.getElementById('characterIcon').value,
       description: document.getElementById('characterDesc').value,
       personality: document.getElementById('characterPersonality').value,
       background: document.getElementById('characterBackground').value,
-      responseFormat: document.getElementById('characterFormat').value
+      responseFormat: document.getElementById('characterFormat').value,
+      openingMessage: document.getElementById('characterOpening').value
     };
+
+    const avatarResult = getAvatarFormResult();
+    formData.icon = avatarResult.icon || formData.icon || '🧑';
+    formData.avatarType = avatarResult.avatarType;
+    formData.avatarUrl = avatarResult.avatarUrl;
 
     if (editingCharacterId) {
       const character = characters.find((char) => char.id === editingCharacterId);
       if (character) {
         Object.assign(character, formData);
+        const convo = conversations[character.id];
+        if (convo && convo.length) {
+          convo[0] = createOpeningMessage(character, convo[0].timestamp || Date.now());
+        }
       }
     } else {
       const newCharacter = {
@@ -1205,7 +1500,7 @@ document.addEventListener('DOMContentLoaded', () => {
         conversationCount: 0
       };
       characters.push(newCharacter);
-      conversations[newCharacter.id] = [];
+      conversations[newCharacter.id] = [createOpeningMessage(newCharacter)];
       currentCharacter = newCharacter;
       editingCharacterId = null;
     }
@@ -1217,11 +1512,8 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCharacterManagement();
     if (currentCharacter) {
       loadConversation(currentCharacter.id);
-      const avatarNode = document.getElementById('currentCharacterAvatar');
-      if (avatarNode) avatarNode.innerHTML = getPixelAvatarByName(currentCharacter.name);
-      const nameNode = document.getElementById('currentCharacterName');
-      if (nameNode) nameNode.textContent = currentCharacter.name;
     }
+    updateCurrentCharacterHeader();
     updateStats();
     closeCharacterModal();
     editingCharacterId = null;
@@ -1241,6 +1533,7 @@ window.sendMessage = sendMessage;
 window.handleKeyPress = handleKeyPress;
 window.attachFile = attachFile;
 window.startVoiceCall = startVoiceCall;
+window.startVoiceInput = startVoiceInput;
 window.setTheme = (theme) => {
   document.body.setAttribute('data-theme', theme);
   localStorage.setItem('theme', theme);
@@ -1259,8 +1552,8 @@ window.newConversation = () => {
   if (currentMsgs && currentMsgs.length > 0) {
     archivedSessions[cid].push({ id: `${cid}-${Date.now()}`, messages: currentMsgs });
   }
-  // 创建新的空会话（保留欢迎语可选，这里不保留）
-  conversations[cid] = [];
+  // 创建新的会话并写入开场发言
+  conversations[cid] = [createOpeningMessage(currentCharacter)];
   viewingArchived = null;
   loadConversation(cid);
   renderHistoryList();
