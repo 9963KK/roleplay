@@ -738,6 +738,8 @@ body {
   align-items: center;
   justify-content: center;
   transition: background 0.2s ease, transform 0.15s ease, color 0.15s ease;
+  position: relative;
+  z-index: 0;
 }
 .action-btn:hover { background: rgba(0, 0, 0, 0.1); color: #374151; transform: translateY(-1px); }
 .action-btn svg { width: 18px; height: 18px; transition: transform 0.15s ease; }
