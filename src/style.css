@@ -920,6 +920,7 @@ body {
   flex: 1;
   max-width: 5px;
   min-width: 3px;
+  height: 16px;
   border-radius: 999px;
   background: rgba(15,118,110,0.55);
   animation: wavePulse 1.2s ease-in-out infinite;

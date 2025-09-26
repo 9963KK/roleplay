@@ -488,6 +488,24 @@ function setVoiceProcessing(flag) {
   updateVoiceButton();
 }
 
+function joinUrl(base = '', endpoint = '') {
+  if (!base) {
+    return endpoint || '';
+  }
+  if (!endpoint) return base;
+  if (/^https?:/i.test(endpoint)) return endpoint;
+  const trimmedBase = base.replace(/\/+$/, '');
+  let trimmedEndpoint = endpoint.replace(/^\/+/, '');
+  const versionMatch = trimmedBase.match(/\/(v\d+)(?:$|\/)/i);
+  if (versionMatch) {
+    const version = versionMatch[1];
+    if (trimmedEndpoint.toLowerCase().startsWith(`${version.toLowerCase()}/`)) {
+      trimmedEndpoint = trimmedEndpoint.slice(version.length + 1);
+    }
+  }
+  return `${trimmedBase}/${trimmedEndpoint}`;
+}
+
 function updateRecordingTimerLabel(elapsedMs = 0) {
   const label = document.getElementById('recordingTimer');
   if (!label) return;
@@ -597,8 +615,8 @@ async function transcribeAudioBlob(blob) {
     if (devEnabled) {
       const base = localStorage.getItem('dev_asr_base') || appConfig?.dev?.asrBase || appConfig?.dev?.llmBase;
       if (!base) throw new Error('未配置 ASR Base 地址');
-      const endpoint = appConfig?.dev?.asrTranscribeEndpoint || '/v1/audio/transcriptions';
-      url = `${base}${endpoint}`;
+      const endpoint = appConfig?.dev?.asrTranscribeEndpoint || '/audio/transcriptions';
+      url = joinUrl(base, endpoint);
       const apiKey = localStorage.getItem('dev_asr_key');
       if (apiKey) {
         const authHeader = appConfig?.dev?.authHeader || 'Authorization';
@@ -608,7 +626,7 @@ async function transcribeAudioBlob(blob) {
     } else {
       const base = appConfig?.apiBase || '';
       const defaultRoute = appConfig?.asrRoute || '/asr/transcribe';
-      url = `${base}${defaultRoute}`;
+      url = joinUrl(base, defaultRoute);
     }
 
     const response = await fetch(url, {
