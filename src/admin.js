@@ -400,13 +400,13 @@ function render() {
         baseId: 'dev_llm_base', keyId: 'dev_api_key', endpoint: appConfig?.dev?.modelsEndpoint || '/models'
       },
       [KEYS.asr]: {
-        baseId: 'dev_asr_base', keyId: 'dev_asr_key', endpoint: appConfig?.dev?.asrModelsEndpoint || ''
+        baseId: 'dev_asr_base', keyId: 'dev_asr_key', endpoint: appConfig?.dev?.asrModelsEndpoint || '/models'
       },
       [KEYS.tts]: {
-        baseId: 'dev_tts_base', keyId: 'dev_tts_key', endpoint: appConfig?.dev?.ttsVoicesEndpoint || ''
+        baseId: 'dev_tts_base', keyId: 'dev_tts_key', endpoint: appConfig?.dev?.ttsVoicesEndpoint || '/models'
       },
       [KEYS.vrm]: {
-        baseId: 'dev_vrm_base', keyId: 'dev_vrm_key', endpoint: appConfig?.dev?.voiceModelsEndpoint || ''
+        baseId: 'dev_vrm_base', keyId: 'dev_vrm_key', endpoint: appConfig?.dev?.voiceModelsEndpoint || '/models'
       }
     }[serviceKey];
 
