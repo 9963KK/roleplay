@@ -74,6 +74,22 @@ let avatarFormState = {
   uploadName: '',
   baseCharacter: null
 };
+const supportsLocalSpeechRecognition = Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
+const VOICE_MODE_KEY = 'cfg_voice_mode';
+
+function resolveInitialVoiceMode() {
+  try {
+    const stored = localStorage.getItem(VOICE_MODE_KEY);
+    if (stored === 'local' || stored === 'asr') {
+      if (stored === 'local' && !supportsLocalSpeechRecognition) return 'asr';
+      return stored;
+    }
+  } catch {
+    // ignore
+  }
+  return supportsLocalSpeechRecognition ? 'local' : 'asr';
+}
+
 const voiceInputState = {
   isRecording: false,
   processing: false,
@@ -82,8 +98,16 @@ const voiceInputState = {
   mediaStream: null,
   chunks: [],
   baseText: '',
-  lastPartial: ''
+  lastPartial: '',
+  mode: resolveInitialVoiceMode(),
+  activeMode: resolveInitialVoiceMode(),
+  timerInterval: null,
+  startTimestamp: 0,
+  discardRecording: false,
+  localUnavailableAlerted: false
 };
+
+setVoiceInputMode(voiceInputState.mode, { persist: true, silent: true });
 
 function extractThinkContent(rawText = '') {
   const thinkSegments = [];
@@ -391,6 +415,65 @@ function getPreferredASRModel() {
   return '';
 }
 
+function getVoiceInputMode() {
+  return voiceInputState.mode;
+}
+
+function setVoiceInputMode(mode, options = {}) {
+  if (mode !== 'local' && mode !== 'asr') return;
+  let target = mode;
+  if (mode === 'local' && !supportsLocalSpeechRecognition) {
+    if (!options.silent && !voiceInputState.localUnavailableAlerted) {
+      alert('当前浏览器不支持本地语音识别，将继续使用云端 ASR');
+      voiceInputState.localUnavailableAlerted = true;
+    }
+    target = 'asr';
+  }
+  const changed = voiceInputState.mode !== target;
+  voiceInputState.mode = target;
+  if (changed && options.persist !== false) {
+    try {
+      localStorage.setItem(VOICE_MODE_KEY, target);
+    } catch {
+      // ignore
+    }
+  }
+  if (!voiceInputState.isRecording) {
+    voiceInputState.activeMode = target;
+  }
+  updateVoiceModeIndicators();
+}
+
+function toggleVoiceInputMode() {
+  const next = voiceInputState.mode === 'local' ? 'asr' : 'local';
+  setVoiceInputMode(next, { silent: next !== 'local' });
+}
+
+function updateVoiceModeIndicators() {
+  const chip = document.getElementById('voiceModeToggle');
+  if (chip) {
+    chip.textContent = voiceInputState.mode === 'asr' ? '云端' : '本地';
+    chip.setAttribute('data-mode', voiceInputState.mode);
+    chip.title = voiceInputState.mode === 'asr'
+      ? '当前：云端 ASR 识别（点击切换）'
+      : '当前：本地语音识别（点击切换）';
+    chip.disabled = !supportsLocalSpeechRecognition;
+  }
+  const voiceBtn = document.querySelector('[data-action="voice"]');
+  if (voiceBtn) {
+    const indicatorMode = voiceInputState.isRecording ? voiceInputState.activeMode : voiceInputState.mode;
+    voiceBtn.setAttribute('data-voice-mode', indicatorMode);
+    voiceBtn.title = indicatorMode === 'asr' ? '语音输入（云端 ASR）' : '语音输入（本地识别）';
+  }
+  document.querySelectorAll('[data-voice-mode-option]')?.forEach((btn) => {
+    const mode = btn.getAttribute('data-voice-mode-option');
+    btn.classList.toggle('active', mode === voiceInputState.mode);
+    if (mode === 'local') {
+      btn.disabled = !supportsLocalSpeechRecognition;
+    }
+  });
+}
+
 function updateVoiceButton() {
   const btn = document.querySelector('[data-action="voice"]');
   if (!btn) return;
@@ -403,6 +486,46 @@ function updateVoiceButton() {
 function setVoiceProcessing(flag) {
   voiceInputState.processing = flag;
   updateVoiceButton();
+}
+
+function updateRecordingTimerLabel(elapsedMs = 0) {
+  const label = document.getElementById('recordingTimer');
+  if (!label) return;
+  const totalSeconds = Math.max(0, Math.floor(elapsedMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  label.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+function showRecordingVisual() {
+  const input = document.getElementById('messageInput');
+  const visual = document.getElementById('recordingVisual');
+  if (!visual) return;
+  if (input) input.classList.add('hidden');
+  visual.classList.remove('hidden');
+  visual.setAttribute('aria-hidden', 'false');
+  voiceInputState.startTimestamp = Date.now();
+  updateRecordingTimerLabel(0);
+  if (voiceInputState.timerInterval) clearInterval(voiceInputState.timerInterval);
+  voiceInputState.timerInterval = setInterval(() => {
+    updateRecordingTimerLabel(Date.now() - voiceInputState.startTimestamp);
+  }, 200);
+}
+
+function hideRecordingVisual() {
+  const input = document.getElementById('messageInput');
+  const visual = document.getElementById('recordingVisual');
+  if (voiceInputState.timerInterval) {
+    clearInterval(voiceInputState.timerInterval);
+    voiceInputState.timerInterval = null;
+  }
+  voiceInputState.startTimestamp = 0;
+  if (visual && !visual.classList.contains('hidden')) {
+    visual.classList.add('hidden');
+    visual.setAttribute('aria-hidden', 'true');
+  }
+  if (input) input.classList.remove('hidden');
+  updateRecordingTimerLabel(0);
 }
 
 function applyTranscribedText(text, finalize = false) {
@@ -435,6 +558,7 @@ function stopVoiceInput(triggerTranscription = true) {
     voiceInputState.recognition = null;
     recognition.stop();
     voiceInputState.isRecording = false;
+    voiceInputState.activeMode = voiceInputState.mode;
     if (triggerTranscription && voiceInputState.lastPartial) {
       applyTranscribedText(voiceInputState.lastPartial, true);
     }
@@ -443,6 +567,7 @@ function stopVoiceInput(triggerTranscription = true) {
   }
   if (voiceInputState.mediaRecorder) {
     try {
+      voiceInputState.discardRecording = !triggerTranscription;
       voiceInputState.mediaRecorder.stop();
     } catch (e) {
       console.warn('停止录音失败', e);
@@ -450,6 +575,8 @@ function stopVoiceInput(triggerTranscription = true) {
   }
   cleanupVoiceStream();
   voiceInputState.isRecording = false;
+  voiceInputState.activeMode = voiceInputState.mode;
+  hideRecordingVisual();
   updateVoiceButton();
 }
 
@@ -539,17 +666,24 @@ function startWebSpeechRecognition() {
       console.error('SpeechRecognition error', event);
       alert(`语音识别错误：${event?.error || '未知错误'}`);
       stopVoiceInput(false);
+      voiceInputState.activeMode = voiceInputState.mode;
+      updateVoiceModeIndicators();
     };
 
     recognition.onend = () => {
       voiceInputState.recognition = null;
       voiceInputState.isRecording = false;
+      voiceInputState.activeMode = voiceInputState.mode;
       updateVoiceButton();
+      updateVoiceModeIndicators();
     };
 
     recognition.start();
     voiceInputState.recognition = recognition;
+    voiceInputState.activeMode = 'local';
     voiceInputState.isRecording = true;
+    hideRecordingVisual();
+    updateVoiceModeIndicators();
     updateVoiceButton();
     return true;
   } catch (err) {
@@ -569,6 +703,9 @@ async function startMediaRecorderFlow() {
     voiceInputState.chunks = [];
     voiceInputState.baseText = (document.getElementById('messageInput')?.value || '').trim();
     voiceInputState.lastPartial = '';
+    voiceInputState.activeMode = 'asr';
+    voiceInputState.discardRecording = false;
+    showRecordingVisual();
 
     mediaRecorder.addEventListener('dataavailable', (event) => {
       if (event.data && event.data.size > 0) voiceInputState.chunks.push(event.data);
@@ -576,18 +713,23 @@ async function startMediaRecorderFlow() {
 
     mediaRecorder.addEventListener('stop', async () => {
       const blob = new Blob(voiceInputState.chunks, { type: mediaRecorder.mimeType });
+      const shouldDiscard = voiceInputState.discardRecording;
+      voiceInputState.discardRecording = false;
       cleanupVoiceStream();
       voiceInputState.mediaRecorder = null;
       voiceInputState.isRecording = false;
+      voiceInputState.activeMode = voiceInputState.mode;
+      hideRecordingVisual();
       updateVoiceButton();
       voiceInputState.chunks = [];
-      if (blob.size > 0) {
+      if (blob.size > 0 && !shouldDiscard) {
         await transcribeAudioBlob(blob);
       }
     });
 
     mediaRecorder.start();
     voiceInputState.isRecording = true;
+    updateVoiceModeIndicators();
     updateVoiceButton();
   } catch (error) {
     console.error('启动 MediaRecorder 失败', error);
@@ -595,6 +737,7 @@ async function startMediaRecorderFlow() {
     cleanupVoiceStream();
     voiceInputState.mediaRecorder = null;
     voiceInputState.isRecording = false;
+    hideRecordingVisual();
     updateVoiceButton();
   }
 }
@@ -1412,6 +1555,7 @@ function renderModelsPanel() {
       tts: get('cfg_tts_voice', ttsVoices[0] || ''),
       vrm: get('cfg_voice_model', voiceModels[0] || '')
     };
+    const voiceMode = getVoiceInputMode();
 
     const optionsHTML = (arr, selected) =>
       arr.map((v) => `<option value="${v}" ${v === selected ? 'selected' : ''}>${v}</option>`).join('');
@@ -1425,6 +1569,18 @@ function renderModelsPanel() {
         <div class="form-row">
           <label>ASR（语音识别）</label>
           <select id="sel-asr" class="select">${optionsHTML(asr, state.asr)}</select>
+        </div>
+        <div class="form-row">
+          <label>语音输入模式</label>
+          <div>
+            <div class="segmented" role="group" aria-label="语音输入模式">
+              <button type="button" class="seg-btn ${voiceMode === 'local' ? 'active' : ''}" data-voice-mode-option="local">本地实时</button>
+              <button type="button" class="seg-btn ${voiceMode === 'asr' ? 'active' : ''}" data-voice-mode-option="asr">云端 ASR</button>
+            </div>
+            <div class="field-note">${supportsLocalSpeechRecognition
+              ? '本地模式依赖浏览器的语音识别能力，云端模式走选定的 ASR 模型。'
+              : '当前浏览器不支持本地语音识别，将默认使用云端 ASR。'}</div>
+          </div>
         </div>
         <div class="form-row">
           <label>TTS 声音</label>
@@ -1458,8 +1614,20 @@ function renderModelsPanel() {
       localStorage.removeItem('cfg_asr_model');
       localStorage.removeItem('cfg_tts_voice');
       localStorage.removeItem('cfg_voice_model');
+      localStorage.removeItem(VOICE_MODE_KEY);
+      setVoiceInputMode(resolveInitialVoiceMode(), { persist: true, silent: true });
       renderModelsPanel();
     });
+
+    panel.querySelectorAll('[data-voice-mode-option]')?.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const nextMode = btn.getAttribute('data-voice-mode-option');
+        if (!nextMode) return;
+        setVoiceInputMode(nextMode);
+      });
+    });
+
+    updateVoiceModeIndicators();
   };
 
   // 先用本地 admin/env 渲染
@@ -1649,14 +1817,51 @@ function startVoiceCall() {
   alert('语音通话功能开发中...');
 }
 
+function cancelVoiceRecording() {
+  if (!voiceInputState.isRecording || voiceInputState.activeMode !== 'asr') return;
+  voiceInputState.discardRecording = true;
+  stopVoiceInput(false);
+}
+
+function finishVoiceRecording() {
+  if (!voiceInputState.isRecording || voiceInputState.activeMode !== 'asr') return;
+  voiceInputState.discardRecording = false;
+  stopVoiceInput(true);
+}
+
 async function startVoiceInput() {
   if (voiceInputState.processing) return;
   if (voiceInputState.isRecording) {
-    stopVoiceInput(false);
+    stopVoiceInput(true);
     return;
   }
   updateVoiceButton();
-  if (startWebSpeechRecognition()) return;
+  updateVoiceModeIndicators();
+
+  const preferredMode = getVoiceInputMode();
+  if (preferredMode === 'local') {
+    if (!supportsLocalSpeechRecognition) {
+      if (!voiceInputState.localUnavailableAlerted) {
+        alert('当前浏览器不支持本地语音识别，将改用云端 ASR');
+        voiceInputState.localUnavailableAlerted = true;
+      }
+      setVoiceInputMode('asr');
+      await startMediaRecorderFlow();
+      return;
+    }
+    const success = startWebSpeechRecognition();
+    if (success) {
+      return;
+    }
+    if (!voiceInputState.localUnavailableAlerted) {
+      alert('无法启动本地语音识别，将使用云端 ASR。');
+      voiceInputState.localUnavailableAlerted = true;
+    }
+    setVoiceInputMode('asr');
+    await startMediaRecorderFlow();
+    return;
+  }
+
   await startMediaRecorderFlow();
 }
 
@@ -1680,6 +1885,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 渲染模型设置（从 app-config/admin/接口 读取候选）
   renderModelsPanel();
+  updateVoiceModeIndicators();
 
   // 绑定侧边栏搜索
   const searchInput = document.getElementById('historySearch');
@@ -1708,6 +1914,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const fileInput = document.getElementById('characterAvatarFile');
   fileInput?.addEventListener('change', handleAvatarFileChange);
+
+  document.getElementById('voiceModeToggle')?.addEventListener('click', toggleVoiceInputMode);
 
   // 固定浅色主题
   document.body.setAttribute('data-theme', 'light');
@@ -1821,6 +2029,8 @@ window.handleKeyPress = handleKeyPress;
 window.attachFile = attachFile;
 window.startVoiceCall = startVoiceCall;
 window.startVoiceInput = startVoiceInput;
+window.cancelVoiceRecording = cancelVoiceRecording;
+window.finishVoiceRecording = finishVoiceRecording;
 window.setTheme = (theme) => {
   document.body.setAttribute('data-theme', theme);
   localStorage.setItem('theme', theme);
