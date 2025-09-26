@@ -85,6 +85,11 @@ const voiceInputState = {
   lastPartial: ''
 };
 
+function stripThinkTags(text) {
+  if (!text) return '';
+  return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+}
+
 function escapeHtml(str = '') {
   return String(str)
     .replace(/&/g, '&amp;')
@@ -964,6 +969,7 @@ function addMessageToUI(message) {
   }
 
   if (message.type === 'ai') {
+    const cleanedText = stripThinkTags(message.text);
     messageDiv.innerHTML = `
       <div class="message-avatar">${avatarHTML}</div>
       <div class="message-content"><div class="message-text"></div></div>
@@ -973,16 +979,16 @@ function addMessageToUI(message) {
     try {
       const target = messageDiv.querySelector('.message-text');
       if (target) {
-        const reasoning = renderReasoningHTML(message.text);
+        const reasoning = renderReasoningHTML(cleanedText);
         if (reasoning) {
           messageDiv.classList.add('ai-reasoning');
           target.innerHTML = reasoning;
         } else {
-          target.innerHTML = renderMarkdown(message.text);
+          target.innerHTML = renderMarkdown(cleanedText);
         }
       }
     } catch (e) {
-      messageDiv.querySelector('.message-text').textContent = message.text;
+      messageDiv.querySelector('.message-text').textContent = cleanedText || message.text;
     }
   } else {
     // 用户消息：时间在左侧，气泡在右侧
