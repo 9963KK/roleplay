@@ -135,6 +135,66 @@ function setAvailable(key, list) {
   }
 }
 
+const PREFERRED_ARRAY_KEYS = ['data', 'items', 'models', 'list', 'result', 'results', 'entries'];
+const MODEL_ID_KEYS = ['id', 'model', 'name', 'slug', 'code', 'uid', 'value', 'key', 'identifier'];
+
+function findArrayCandidate(payload, depth = 0, visited = new Set()) {
+  if (!payload || depth > 4) return [];
+  if (Array.isArray(payload)) return payload;
+  if (typeof payload !== 'object') return [];
+  if (visited.has(payload)) return [];
+  visited.add(payload);
+
+  for (const key of PREFERRED_ARRAY_KEYS) {
+    const direct = payload[key];
+    if (Array.isArray(direct)) return direct;
+  }
+
+  for (const key of PREFERRED_ARRAY_KEYS) {
+    const nested = payload[key];
+    if (nested && typeof nested === 'object') {
+      const arr = findArrayCandidate(nested, depth + 1, visited);
+      if (arr.length) return arr;
+    }
+  }
+
+  for (const value of Object.values(payload)) {
+    if (!value || typeof value !== 'object') continue;
+    const arr = findArrayCandidate(value, depth + 1, visited);
+    if (arr.length) return arr;
+  }
+
+  const keys = Object.keys(payload || {});
+  if (keys.length && keys.every((key) => typeof key === 'string')) {
+    return keys;
+  }
+  return [];
+}
+
+function pickModelIdentifier(entry, depth = 0) {
+  if (entry === null || entry === undefined) return '';
+  if (typeof entry === 'string') return entry.trim();
+  if (typeof entry === 'number') return String(entry);
+  if (depth > 3 || typeof entry !== 'object') return '';
+
+  for (const key of MODEL_ID_KEYS) {
+    const value = entry[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+    if (typeof value === 'number') return String(value);
+  }
+
+  for (const value of Object.values(entry)) {
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+
+  for (const value of Object.values(entry)) {
+    if (!value || typeof value !== 'object') continue;
+    const nested = pickModelIdentifier(value, depth + 1);
+    if (nested) return nested;
+  }
+  return '';
+}
+
 function setButtonLoading(btn, loading) {
   if (!btn) return;
   if (loading) {
@@ -379,13 +439,22 @@ function render() {
           return [];
         }
         const j = await r.json().catch(() => ({}));
-        let arr = [];
-        if (Array.isArray(j)) arr = j;
-        else if (Array.isArray(j?.data)) arr = j.data;
-        else if (Array.isArray(j?.items)) arr = j.items;
-        else if (Array.isArray(j?.models)) arr = j.models;
-        const ids = arr.map((x) => x?.id || x?.name || x).filter(Boolean);
-        if (!ids.length) alert('已请求成功，但响应中未找到模型列表字段（尝试 data/items/models 或数组）。');
+        let arr = findArrayCandidate(j);
+        if (!Array.isArray(arr) || !arr.length) arr = findArrayCandidate(j?.data);
+        const idsSet = new Set();
+        const appendIds = (list) => {
+          if (!Array.isArray(list)) return;
+          list.forEach((item) => {
+            const id = pickModelIdentifier(item);
+            if (id) idsSet.add(id);
+          });
+        };
+        appendIds(arr);
+        if (!idsSet.size && j && typeof j === 'object') {
+          appendIds(Object.keys(j));
+        }
+        const ids = Array.from(idsSet);
+        if (!ids.length) alert('已请求成功，但未能解析出模型名称（请确认响应中包含 id/name/model 等字段）。');
         return ids;
       } catch (e) {
         alert(`请求异常：${e?.message || e}`);
