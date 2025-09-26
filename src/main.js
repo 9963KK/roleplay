@@ -74,6 +74,16 @@ let avatarFormState = {
   uploadName: '',
   baseCharacter: null
 };
+const voiceInputState = {
+  isRecording: false,
+  processing: false,
+  recognition: null,
+  mediaRecorder: null,
+  mediaStream: null,
+  chunks: [],
+  baseText: '',
+  lastPartial: ''
+};
 
 function escapeHtml(str = '') {
   return String(str)
@@ -330,6 +340,232 @@ function getAvatarFormResult() {
     };
   }
   return { avatarType: 'emoji', avatarUrl: '', icon: emojiValue || '🙂' };
+}
+
+function getPreferredASRModel() {
+  const selected = localStorage.getItem('cfg_asr_model');
+  if (selected) return selected;
+  try {
+    const stored = localStorage.getItem('visible_asr_models');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length) return parsed[0];
+    }
+  } catch (e) {
+    console.warn('解析可见 ASR 模型失败', e);
+  }
+  if (appConfig?.defaults?.asr && appConfig.defaults.asr.length) {
+    return appConfig.defaults.asr[0];
+  }
+  return '';
+}
+
+function updateVoiceButton() {
+  const btn = document.querySelector('[data-action="voice"]');
+  if (!btn) return;
+  btn.classList.toggle('recording', voiceInputState.isRecording);
+  btn.classList.toggle('loading', voiceInputState.processing);
+  btn.setAttribute('aria-pressed', voiceInputState.isRecording ? 'true' : 'false');
+  btn.disabled = voiceInputState.processing;
+}
+
+function setVoiceProcessing(flag) {
+  voiceInputState.processing = flag;
+  updateVoiceButton();
+}
+
+function applyTranscribedText(text, finalize = false) {
+  const input = document.getElementById('messageInput');
+  if (!input) return;
+  const cleaned = (text || '').trim();
+  if (finalize) {
+    voiceInputState.baseText = [voiceInputState.baseText, cleaned].filter(Boolean).join(' ').trim();
+    voiceInputState.lastPartial = '';
+    input.value = voiceInputState.baseText;
+  } else {
+    voiceInputState.lastPartial = cleaned;
+    const composed = [voiceInputState.baseText, voiceInputState.lastPartial].filter(Boolean).join(' ').trim();
+    input.value = composed;
+  }
+  input.focus();
+}
+
+function cleanupVoiceStream() {
+  if (voiceInputState.mediaStream) {
+    voiceInputState.mediaStream.getTracks()?.forEach((track) => track.stop());
+  }
+  voiceInputState.mediaStream = null;
+}
+
+function stopVoiceInput(triggerTranscription = true) {
+  if (!voiceInputState.isRecording) return;
+  if (voiceInputState.recognition) {
+    const recognition = voiceInputState.recognition;
+    voiceInputState.recognition = null;
+    recognition.stop();
+    voiceInputState.isRecording = false;
+    if (triggerTranscription && voiceInputState.lastPartial) {
+      applyTranscribedText(voiceInputState.lastPartial, true);
+    }
+    updateVoiceButton();
+    return;
+  }
+  if (voiceInputState.mediaRecorder) {
+    try {
+      voiceInputState.mediaRecorder.stop();
+    } catch (e) {
+      console.warn('停止录音失败', e);
+    }
+  }
+  cleanupVoiceStream();
+  voiceInputState.isRecording = false;
+  updateVoiceButton();
+}
+
+async function transcribeAudioBlob(blob) {
+  if (!blob || !blob.size) return;
+  setVoiceProcessing(true);
+  try {
+    await loadAppConfig();
+    const devEnabled = localStorage.getItem('dev_enabled') === 'true';
+    const model = getPreferredASRModel();
+    const formData = new FormData();
+    formData.append('file', blob, `recording-${Date.now()}.webm`);
+    if (model) formData.append('model', model);
+
+    let url = '';
+    const headers = {};
+
+    if (devEnabled) {
+      const base = localStorage.getItem('dev_asr_base') || appConfig?.dev?.asrBase || appConfig?.dev?.llmBase;
+      if (!base) throw new Error('未配置 ASR Base 地址');
+      const endpoint = appConfig?.dev?.asrTranscribeEndpoint || '/v1/audio/transcriptions';
+      url = `${base}${endpoint}`;
+      const apiKey = localStorage.getItem('dev_asr_key');
+      if (apiKey) {
+        const authHeader = appConfig?.dev?.authHeader || 'Authorization';
+        const authScheme = appConfig?.dev?.authScheme || 'Bearer';
+        headers[authHeader] = `${authScheme} ${apiKey}`;
+      }
+    } else {
+      const base = appConfig?.apiBase || '';
+      const defaultRoute = appConfig?.asrRoute || '/asr/transcribe';
+      url = `${base}${defaultRoute}`;
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: formData
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      throw new Error(text || `HTTP ${response.status}`);
+    }
+
+    const result = await response.json().catch(() => ({}));
+    const transcript = result.text || result.transcript || result.result || result.data?.text || '';
+    if (transcript) {
+      applyTranscribedText(transcript, true);
+    } else {
+      alert('未获取到识别结果');
+    }
+  } catch (error) {
+    console.error('ASR 请求失败', error);
+    alert(`语音识别失败：${error?.message || error}`);
+  } finally {
+    setVoiceProcessing(false);
+  }
+}
+
+function startWebSpeechRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) return false;
+  try {
+    const recognition = new SpeechRecognition();
+    recognition.lang = navigator.language || 'zh-CN';
+    recognition.interimResults = true;
+    recognition.continuous = true;
+    voiceInputState.baseText = (document.getElementById('messageInput')?.value || '').trim();
+    voiceInputState.lastPartial = '';
+
+    recognition.onresult = (event) => {
+      let interim = '';
+      let finalText = '';
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const result = event.results[i];
+        if (!result) continue;
+        const transcript = result[0]?.transcript || '';
+        if (result.isFinal) finalText += transcript;
+        else interim += transcript;
+      }
+      if (interim) applyTranscribedText(interim, false);
+      if (finalText) applyTranscribedText(finalText, true);
+    };
+
+    recognition.onerror = (event) => {
+      console.error('SpeechRecognition error', event);
+      alert(`语音识别错误：${event?.error || '未知错误'}`);
+      stopVoiceInput(false);
+    };
+
+    recognition.onend = () => {
+      voiceInputState.recognition = null;
+      voiceInputState.isRecording = false;
+      updateVoiceButton();
+    };
+
+    recognition.start();
+    voiceInputState.recognition = recognition;
+    voiceInputState.isRecording = true;
+    updateVoiceButton();
+    return true;
+  } catch (err) {
+    console.warn('SpeechRecognition 启动失败', err);
+    return false;
+  }
+}
+
+async function startMediaRecorderFlow() {
+  try {
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error('当前浏览器不支持麦克风采集');
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+    const mediaRecorder = new MediaRecorder(stream, { mimeType });
+    voiceInputState.mediaRecorder = mediaRecorder;
+    voiceInputState.mediaStream = stream;
+    voiceInputState.chunks = [];
+    voiceInputState.baseText = (document.getElementById('messageInput')?.value || '').trim();
+    voiceInputState.lastPartial = '';
+
+    mediaRecorder.addEventListener('dataavailable', (event) => {
+      if (event.data && event.data.size > 0) voiceInputState.chunks.push(event.data);
+    });
+
+    mediaRecorder.addEventListener('stop', async () => {
+      const blob = new Blob(voiceInputState.chunks, { type: mediaRecorder.mimeType });
+      cleanupVoiceStream();
+      voiceInputState.mediaRecorder = null;
+      voiceInputState.isRecording = false;
+      updateVoiceButton();
+      voiceInputState.chunks = [];
+      if (blob.size > 0) {
+        await transcribeAudioBlob(blob);
+      }
+    });
+
+    mediaRecorder.start();
+    voiceInputState.isRecording = true;
+    updateVoiceButton();
+  } catch (error) {
+    console.error('启动 MediaRecorder 失败', error);
+    alert(`无法访问麦克风：${error?.message || error}`);
+    cleanupVoiceStream();
+    voiceInputState.mediaRecorder = null;
+    voiceInputState.isRecording = false;
+    updateVoiceButton();
+  }
 }
 
 function parseReasoningSections(text) {
@@ -1369,8 +1605,15 @@ function startVoiceCall() {
   alert('语音通话功能开发中...');
 }
 
-function startVoiceInput() {
-  alert('语音输入功能开发中...');
+async function startVoiceInput() {
+  if (voiceInputState.processing) return;
+  if (voiceInputState.isRecording) {
+    stopVoiceInput(false);
+    return;
+  }
+  updateVoiceButton();
+  if (startWebSpeechRecognition()) return;
+  await startMediaRecorderFlow();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
