@@ -85,9 +85,18 @@ const voiceInputState = {
   lastPartial: ''
 };
 
-function stripThinkTags(text) {
-  if (!text) return '';
-  return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+function extractThinkContent(rawText = '') {
+  const thinkSegments = [];
+  const regex = /<think>([\s\S]*?)<\/think>/gi;
+  let cleaned = rawText;
+  let match = regex.exec(rawText);
+  while (match) {
+    const segment = match[1]?.trim();
+    if (segment) thinkSegments.push(segment);
+    match = regex.exec(rawText);
+  }
+  cleaned = rawText.replace(regex, '').trim();
+  return { cleanedText: cleaned, thinkSegments };
 }
 
 function escapeHtml(str = '') {
@@ -345,6 +354,23 @@ function getAvatarFormResult() {
     };
   }
   return { avatarType: 'emoji', avatarUrl: '', icon: emojiValue || '🙂' };
+}
+
+function renderThinkHTML(segments) {
+  if (!segments?.length) return '';
+  const items = segments
+    .map((segment) => `<div class="think-item">${renderMarkdown(segment)}</div>`)
+    .join('');
+  return `
+    <details class="think-block">
+      <summary>
+        <span class="think-icon">🧠</span>
+        <span class="think-label">查看思考内容</span>
+        <span class="think-chevron">▾</span>
+      </summary>
+      <div class="think-body">${items}</div>
+    </details>
+  `;
 }
 
 function getPreferredASRModel() {
@@ -969,7 +995,7 @@ function addMessageToUI(message) {
   }
 
   if (message.type === 'ai') {
-    const cleanedText = stripThinkTags(message.text);
+    const { cleanedText, thinkSegments } = extractThinkContent(message.text);
     messageDiv.innerHTML = `
       <div class="message-avatar">${avatarHTML}</div>
       <div class="message-content"><div class="message-text"></div></div>
@@ -983,12 +1009,24 @@ function addMessageToUI(message) {
         if (reasoning) {
           messageDiv.classList.add('ai-reasoning');
           target.innerHTML = reasoning;
+          if (thinkSegments.length) {
+            target.insertAdjacentHTML('beforeend', renderThinkHTML(thinkSegments));
+          }
         } else {
-          target.innerHTML = renderMarkdown(cleanedText);
+          target.innerHTML = renderMarkdown(cleanedText || '');
+          if (thinkSegments.length) {
+            target.insertAdjacentHTML('beforeend', renderThinkHTML(thinkSegments));
+          }
         }
       }
     } catch (e) {
-      messageDiv.querySelector('.message-text').textContent = cleanedText || message.text;
+      const fallbackTarget = messageDiv.querySelector('.message-text');
+      if (fallbackTarget) {
+        fallbackTarget.textContent = cleanedText || message.text;
+        if (thinkSegments.length) {
+          fallbackTarget.insertAdjacentHTML('beforeend', renderThinkHTML(thinkSegments));
+        }
+      }
     }
   } else {
     // 用户消息：时间在左侧，气泡在右侧
